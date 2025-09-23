@@ -2,15 +2,21 @@ import requests
 from bs4 import BeautifulSoup
 import pandas as pd
 import re
+import time
+import json
 
 # TODO: Add error handling and type safe with pydantic
 
 def fetch_transaction_data_given_building_id(building_id):
     """
-    Fetch transaction data for a given building ID
+    Fetch transaction data for a given building ID (e.g. B000063459)
     """
-    url = f"https://app2.hkp.com.hk/utx/tx_history.jsp?bldg_id={building_id}&lang=en"
-    response = requests.get(url)
+    base_url = f"https://app2.hkp.com.hk/utx/tx_history.jsp"
+    params = {
+        "bldg_id": building_id,
+        "lang": "en",
+    }
+    response = requests.get(base_url, params=params)
     soup = BeautifulSoup(response.content, 'html.parser')
     
     # Parse the fullpage table
@@ -32,10 +38,14 @@ def fetch_transaction_data_given_building_id(building_id):
 
 def fetch_building_ids_given_estate_id(estate_id):
     """
-    Fetch building IDs for a given estate ID.
+    Fetch building IDs for a given estate ID. (e.g. E00024)
     """
-    url = f"https://app2.hkp.com.hk/utx/index.jsp?est_id={estate_id}&lang=zh"
-    response = requests.get(url)
+    base_url = f"https://app2.hkp.com.hk/utx/index.jsp"
+    params = {
+        "est_id": estate_id,
+        "lang": "zh",
+    }
+    response = requests.get(base_url, params=params)
     soup = BeautifulSoup(response.content, "html.parser")
 
     # Left side building list per estate
@@ -64,3 +74,58 @@ def fetch_building_ids_given_estate_id(estate_id):
             })
             
     return building_data
+
+def fetch_estate_ids():
+    """
+    Fetch all estate IDs from the paginated API. Contains all info for each estate.
+    """
+    
+    base_url = "https://data.hkp.com.hk/search/v1/estates"
+    params = {
+        "hash": "true",
+        "lang": "zh-hk",
+        "currency": "HKD",
+        "unit": "feet",
+        "search_behavior": "normal",
+        "limit": 1000,
+        "page": 1
+    }
+    headers = {
+        "accept": "application/json, text/plain, */*",
+        "accept-language": "en-US,en;q=0.8",
+        "authorization": None, # Insert your token here
+        "origin": "https://www.hkp.com.hk",
+        "referer": "https://www.hkp.com.hk/",
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36"
+    }
+    estate_count = float('inf')
+    all_estates = []
+    
+    while params["page"] * params["limit"] <= estate_count:
+        response = requests.get(base_url, 
+                                params=params,
+                                headers=headers
+                                )
+        
+        if response.status_code != 200:
+            print(f"Error fetching page {params['page']}: {response.status_code}")
+            break
+            
+        data = response.json()
+        if not data or len(data) == 0:
+            break
+
+        estate_data = data["result"]
+        all_estates.extend(estate_data)
+        print(f"Fetched page {params['page']}, got {len(estate_data)} estates")
+        
+        # Fix fetch size
+        if estate_count == float('inf'):
+            estate_count = data.get("count", float('inf'))
+            print(f"Total estates to fetch: {estate_count}")
+        params["page"] += 1
+        
+        time.sleep(1)
+    
+    with open("estate_info.json", "w", encoding="utf-8") as f:
+        json.dump(all_estates, f, ensure_ascii=False, indent=4)
