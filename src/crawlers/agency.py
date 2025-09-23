@@ -4,8 +4,9 @@ import pandas as pd
 import re
 import time
 import json
+from ..logger import housing_logger
 
-# TODO: Add error handling and type safe with pydantic
+# TODO: Type safe with pydantic
 
 class AgencyCrawler:
     def __init__(self):
@@ -31,7 +32,7 @@ class AgencyCrawler:
             response.raise_for_status()
             return response
         except requests.RequestException as e:
-            print(f"Error making request to {url}: {str(e)}")
+            housing_logger.error(f"Error making request to {url}: {str(e)}")
             return None
 
     def fetch_transaction_data_given_building_id(self, building_id):
@@ -61,11 +62,11 @@ class AgencyCrawler:
         data = []
         tbody = table.find("tbody")
         if not tbody:
-            print(f"No transaction data found for building ID {building_id}")
+            housing_logger.warning(f"No transaction data found for building ID {building_id}")
             return
         rows = tbody.find_all("tr")
         if not rows:
-            print(f"No transaction data found for building ID {building_id}")
+            housing_logger.warning(f"No transaction data found for building ID {building_id}")
             return
         for row in rows:
             cols = row.find_all("td")
@@ -148,7 +149,7 @@ class AgencyCrawler:
                 )
 
             if response.status_code != 200:
-                print(f"Error fetching page {params['page']}: {response.status_code}")
+                housing_logger.error(f"Error fetching page {params['page']}: {response.status_code}")
                 break
 
             data = response.json()
@@ -157,12 +158,12 @@ class AgencyCrawler:
 
             estate_data = data["result"]
             all_estates.extend(estate_data)
-            print(f"Fetched page {params['page']}, got {len(estate_data)} estates")
+            housing_logger.info(f"Fetched page {params['page']}, got {len(estate_data)} estates")
 
             # Fix fetch size
             if estate_count == float("inf"):
                 estate_count = data.get("count", float("inf"))
-                print(f"Total estates to fetch: {estate_count}")
+                housing_logger.info(f"Total estates to fetch: {estate_count}")
             params["page"] += 1
 
             time.sleep(1)
