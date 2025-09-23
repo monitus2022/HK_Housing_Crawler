@@ -50,6 +50,7 @@ def fetch_building_ids_given_estate_id(estate_id):
 
     # Left side building list per estate
     rows = soup.find_all("tr", {"class": "bldg_NotCurr"})
+    rows += soup.find_all("tr", {"class": "bldg_Curr"})
 
     building_data = []
     for row in rows:
@@ -65,7 +66,7 @@ def fetch_building_ids_given_estate_id(estate_id):
                 br.replace_with('|')
             
             full_name = link.get_text(strip=True)
-            estate_unit, building_name = full_name.split('|') if '|' in full_name else (full_name, '')
+            estate_unit, building_name = full_name.split('|') if '|' in full_name else ('', full_name)
             
             building_data.append({
                 'building_id': building_id,
@@ -129,3 +130,4 @@ def fetch_estate_ids():
     
     with open("estate_info.json", "w", encoding="utf-8") as f:
         json.dump(all_estates, f, ensure_ascii=False, indent=4)
+        
