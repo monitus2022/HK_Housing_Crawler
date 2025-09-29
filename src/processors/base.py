@@ -10,27 +10,11 @@ class BaseProcessor(ABC):
         self.conn: Optional[sqlite3.Connection] = None
         self.cursor = None
         self.db_path = working_dir / "database.db"
-
-    def check_db_existence(self) -> bool:
-        """
-        Check if the SQLite database exists.
-        """
-        return self.db_path.exists()
-    
-    def create_db(self) -> None:
-        """
-        Create a new SQLite database.
-        """
-        if not self.check_db_existence():
-            self.conn = sqlite3.connect(self.db_path)
-            self.cursor = self.conn.cursor()
-            self.conn.close()
-            self.conn = None
-            self.cursor = None
     
     def connect_db(self) -> None:
         """
-        Connect to the SQLite database.
+        Connect to the SQLite database. 
+        Automatically creates the database file if it does not exist.
         """
         self.conn = sqlite3.connect(self.db_path)
         self.cursor = self.conn.cursor()
