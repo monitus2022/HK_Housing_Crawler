@@ -124,9 +124,9 @@ class AgencyCrawler:
                 )
         return building_data
 
-    def fetch_estate_ids(self):
+    def fetch_estate_info(self):
         """
-        Fetch all estate IDs from the paginated API. Contains all info for each estate.
+        Fetch all estate IDs and info from the paginated API.
         """
         base_url = "https://data.hkp.com.hk/search/v1/estates"
         params = {
