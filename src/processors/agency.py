@@ -63,6 +63,11 @@ class AgencyProcessor(BaseProcessor):
                 output_dict[key] = value
         return output_dict
 
+    def get_estate_ids_from_processed_estate_info(self) -> list[str]:
+        with open("processed_" + self.estate_info_json_path, "r", encoding="utf-8") as file:
+            data = json.load(file)
+        return [item["id"] for item in data if "id" in item]
+
     @staticmethod
     def keep_only_numbers(cell) -> any:
         """

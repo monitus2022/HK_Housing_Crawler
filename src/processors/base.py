@@ -33,18 +33,3 @@ class BaseProcessor(ABC):
         Create necessary tables if they do not exist.
         """
         pass
-
-    @abstractmethod
-    def process_data(self) -> None:
-        """
-        Abstract method to process data. Must be implemented by subclasses.
-        """
-        pass
-    
-    @abstractmethod
-    def check_data_integrity(self) -> bool:
-        """
-        Abstract method to check data integrity. Must be implemented by subclasses.
-        """
-        pass
-    
