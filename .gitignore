@@ -1,1 +1,6 @@
-/env
+env
+testing.*
+*.csv
+*.json
+__pycache__
+*.db
