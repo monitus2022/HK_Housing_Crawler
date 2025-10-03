@@ -1,0 +1,31 @@
+urls:
+  agency:
+    estate_info: "https://data.hkp.com.hk/search/v1/estates"
+    estate_market_info: "https://data.hkp.com.hk/info/v1/market_stat"
+    building_transactions: "https://data.hkp.com.hk/info/v1/transactions/buildings"
+    legacy_building_transactions: "https://app2.hkp.com.hk/utx/tx_history.jsp"
+    legacy_building_ids: "https://app2.hkp.com.hk/utx/index.jsp"
+
+file_paths:
+  agency:
+    db: "data/housing_crawler.db"
+    estate_info_json: "data/estate_info.json"
+    estate_id_json: "data/estate_ids.json"
+    building_id_json: "data/building_ids.json"
+    transactions_json: "data/building_transactions.json"
+
+headers:
+  agency:
+    accept: "application/json, text/plain, */*"
+    accept_language: "en-US,en;q=0.8"
+    authorization: "Bearer "   # Insert token here
+    origin: "https://www.hkp.com.hk"
+    referer: "https://www.hkp.com.hk/"
+    sec_ch_ua: '"Chromium";v="140", "Not=A?Brand";v="24", "Brave";v="140"'
+    sec_ch_ua_mobile: "?0"
+    sec_ch_ua_platform: '"Windows"'
+    sec_fetch_dest: "empty"
+    sec_fetch_mode: "cors"
+    sec_fetch_site: "same-site"
+    sec_gpc: "1"
+    user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36"

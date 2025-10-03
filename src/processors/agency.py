@@ -1,6 +1,5 @@
 import re
 from .base import BaseProcessor
-import sqlite3
 import pandas as pd
 import json
 
@@ -11,16 +10,17 @@ class AgencyProcessor(BaseProcessor):
         self.legacy_transaction_file_path = "transactions.csv"
         self.transaction_file_path = "all_transactions.json"
         self.estate_info_json_path = "estate_info.json"
+        self.processed_estate_info_json_path = "processed_estate_info.json"
 
-    def process_transaction_json(self) -> pd.DataFrame:
+    def save_estate_info_to_db(self) -> None:
         """
-        Process the transaction JSON file.
-        Output a cleaned DataFrame to be stored in the database.
+        Save processed estate information to the database.
         """
-        with open(self.transaction_file_path, "r", encoding="utf-8") as file:
+        with open(self.processed_estate_info_json_path, "r", encoding="utf-8") as file:
             data = json.load(file)
-        
-
+        df = pd.DataFrame(data)
+        self.save_dataframe_to_db(df, "estate_info", if_exists="replace")
+    
     def _legacy_process_transaction_table(self) -> pd.DataFrame:
         """
         Process the transaction table CSV file.
@@ -41,7 +41,7 @@ class AgencyProcessor(BaseProcessor):
         with open(self.estate_info_json_path, "r", encoding="utf-8") as file:
             data = json.load(file)
         data = [self._process_single_estate_info(info) for info in data]
-        with open("processed_" + self.estate_info_json_path, "w", encoding="utf-8") as file:
+        with open(self.processed_estate_info_json_path, "w", encoding="utf-8") as file:
             json.dump(data, file, ensure_ascii=False, indent=2)
         return data
 
