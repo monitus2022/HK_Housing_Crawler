@@ -1,20 +1,27 @@
 import logging
+import colorlog
+
+import logging
+import colorlog
 
 class HousingLogger:
     def __init__(self, name: str):
-        self.logger = logging.getLogger(name)
+        self.logger = colorlog.getLogger(name)
         self.logger.setLevel(logging.DEBUG)
 
-        # Create console handler with a higher log level
-        ch = logging.StreamHandler()
-        ch.setLevel(logging.INFO)
-
-        # Create formatter and add it to the handlers
-        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-        ch.setFormatter(formatter)
-
-        # Add the handlers to the logger
-        self.logger.addHandler(ch)
+        # Colored handler
+        handler = colorlog.StreamHandler()
+        handler.setFormatter(colorlog.ColoredFormatter(
+            '%(log_color)s%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+            log_colors={
+                'DEBUG':    'cyan',
+                'INFO':     'green',
+                'WARNING':  'yellow',
+                'ERROR':    'red',
+                'CRITICAL': 'bold_red',
+            }
+        ))
+        self.logger.addHandler(handler)
 
     def get_logger(self):
         return self.logger

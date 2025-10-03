@@ -4,31 +4,31 @@ import pandas as pd
 import re
 import time
 import json
+from config import housing_crawler_config
 from logger import housing_logger
+import pathlib
+from typing import Optional
 
 # TODO: Type safe with pydantic
 
 
 class AgencyCrawler:
     def __init__(self):
-        self.headers = {
-            "accept": "application/json, text/plain, */*",
-            "accept-language": "en-US,en;q=0.8",
-            "authorization": "Bearer "
-            + "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJndWlkIjoibXItMjAyNS0wOS0yMS1NX193MFh3VFF3RjI0R1ZWNUo3Yy1OYUhnQU5ZR2h5WngteTV4MThDN254SmNUVXhqeUFhVmEtWFZvN0NZclc3SDlJU2tXaS1JSSIsImlhdCI6MTc1ODQ2NTIwNCwiaXNzIjoid3d3LmhrcC5jb20uaGsifQ.c9ME2M6G7vQDwZuX9eyEwFoYa7S64ZW4wUQONnMd5QdL2XVg5xeVFQfyzq5OtylLLa2VRSlT6xpgS513ptq9bHDvZrHrr0egBMtgvvvpnG03r66TUZBiY7PeBWkYbIMmQiUbGyHB2FRhlEJfezrXPspa6ZvCYUkYiPlu-8IvzD7x79vJMfIB9q2htYGI6mfvd9F8wkAjAnTYSKUjyy1hM-1VFTEChf4BY7du5WPJ2buJYW_3DZ_vkOnB5FZt60d7pgTIhYpqMykoYkHq3aOj8bE-I-Gzt1tb9Hq0q7xojEeABiuwH2ffVR3p8zqHN1g3ht70tkSdzfoXb45K8J858Oqcwzs9vlV0RJ30x2lhN5LEdrbdpMj-A1rhxkXvg_6HHqcUC5aafZdo9H0vpq3kt1ixsoRIJZi2wxUFxzag2XPc6T7_uEC5Nop2x1JCZpeTGGi2rwzJhmDJodoSxWMw0ffOFcgposXPWoFOlLWp2MDOJ4kSViOj0R-R6jXrsy1EsFbFWjlTVaNLcuL8i0IAIeZhB1vmlasdyxxAGZb4LESwKcgqJawlsiPg_c_y-whc1cUXIsHosjSlP92_s2RmiEk7ybRMLxdtRqLweZ478nEPBX6YoS4WFSy2D_8uSzKapjDQMWM3YkM8vcNKXPv2I6QI87UqZ0CNIvrDdhXDcd4",  # Insert token here via https://www.hkp.com.hk/zh-hk/list/estate
-            "origin": "https://www.hkp.com.hk",
-            "referer": "https://www.hkp.com.hk/",
-            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36",
-        }
+        self.headers = housing_crawler_config.headers.agency.model_dump()
+        # Ensure data directory exists
+        data_dir = pathlib.Path("data")
+        data_dir.mkdir(parents=True, exist_ok=True)
+        
         # Init session to persist headers and cookies
         self.session = requests.Session()
         self.session.headers.update(self.headers)
 
-    def _make_request(
-        self,
-        url: str,
-        params: dict = None,
-    ):
+        self.estate_info_file_path = housing_crawler_config.file_paths.agency.estate_info_json
+        self.estate_id_file_path = housing_crawler_config.file_paths.agency.estate_id_json
+        self.building_id_file_path = housing_crawler_config.file_paths.agency.building_id_json
+        self.transactions_file_path = housing_crawler_config.file_paths.agency.transactions_json
+
+    def _make_request(self, url: str, params: dict = None) -> Optional[requests.Response]:
         try:
             response = self.session.get(url, params=params)
             response.raise_for_status()
@@ -41,10 +41,10 @@ class AgencyCrawler:
         """
         Fetch transaction history for all building IDs listed in all_building_ids.json
         """
-        with open("all_building_ids.json", "r", encoding="utf-8") as f:
+        with open(self.building_id_file_path, "r", encoding="utf-8") as f:
             building_ids = json.load(f)
         all_transactions = []
-        output_path = "all_transactions.json"
+        output_path = housing_crawler_config.file_paths.agency.transactions_json
         housing_logger.info(
             f"Starting to fetch transaction history for {len(building_ids)} buildings"
         )
@@ -90,13 +90,11 @@ class AgencyCrawler:
             ]
         return data
 
-    def fetch_transaction_history_given_building_id(self, building_id):
+    def fetch_transaction_history_given_building_id(self, building_id) -> Optional[dict[str, list|dict]]:
         """
         Fetch transaction history for a given building ID (e.g. B000063459)
         """
-        base_url = (
-            f"https://data.hkp.com.hk/info/v1/transactions/buildings/{building_id}"
-        )
+        base_url = housing_crawler_config.urls.agency.building_transactions + f"/{building_id}"
         params = {"lang": "en"}
         response = self._make_request(base_url, params=params)
         if not response:
@@ -108,18 +106,16 @@ class AgencyCrawler:
         """
         Fetch all building IDs from all estates listed in estate_ids.json
         """
-        with open("estate_ids.json", "r", encoding="utf-8") as f:
+        with open(housing_crawler_config.file_paths.agency.estate_id_json, "r", encoding="utf-8") as f:
             estate_ids = json.load(f)
         all_building_ids = []
-        output_path = "all_building_ids.json"
+        output_path = housing_crawler_config.file_paths.agency.estate_info_json
         housing_logger.info(
             f"Starting to fetch building IDs for {len(estate_ids)} estates"
         )
 
         for idx, estate_id in enumerate(estate_ids):
-            _, building_ids = self.fetch_estate_info_and_building_ids_given_estate_id(
-                estate_id
-            )
+            _, building_ids = self.fetch_estate_info_and_building_ids_given_estate_id(estate_id)
             if building_ids:
                 all_building_ids.extend(building_ids)
             # Save progress every 100 estates
@@ -131,11 +127,11 @@ class AgencyCrawler:
                 )
             time.sleep(0.25)
 
-    def fetch_estate_info_and_building_ids_given_estate_id(self, estate_id):
+    def fetch_estate_info_and_building_ids_given_estate_id(self, estate_id) -> Optional[tuple[dict, list]]:
         """
         Fetch estate info and building IDs for a given estate ID (e.g. E00024)
         """
-        base_url = f"https://data.hkp.com.hk/info/v1/estates/{estate_id}"
+        base_url = housing_crawler_config.urls.agency.estate_info + f"/{estate_id}"
         params = {"lang": "en"}
         response = self._make_request(base_url, params=params)
         if not response:
@@ -153,7 +149,7 @@ class AgencyCrawler:
         """
         Fetch market info for a given estate ID (e.g. E00024)
         """
-        base_url = f"https://data.hkp.com.hk/info/v1/market_stat"
+        base_url = housing_crawler_config.urls.agency.estate_market_info
         params = {
             "type": "estate",
             "lang": "en",
@@ -166,11 +162,11 @@ class AgencyCrawler:
         data = response.json()
         return data
 
-    def fetch_estate_id_and_info(self):
+    def fetch_estate_id_and_info(self) -> None:
         """
-        Fetch all estate IDs and info from the paginated API.
+        Fetch all estate IDs and info from the paginated API and output to json.
         """
-        base_url = "https://data.hkp.com.hk/search/v1/estates"
+        base_url = housing_crawler_config.urls.agency.estate_info
         params = {
             "hash": "true",
             "lang": "zh-hk",
@@ -212,12 +208,12 @@ class AgencyCrawler:
             # Collect estate IDs for further processing
             estate_ids.extend([estate["id"] for estate in estate_data])
 
-            time.sleep(1)
+            time.sleep(0.25)
 
-        with open("estate_info.json", "w", encoding="utf-8") as f:
+        with open(housing_crawler_config.file_paths.agency.estate_info_json, "w", encoding="utf-8") as f:
             json.dump(all_estates, f, ensure_ascii=False, indent=4)
 
-        with open("estate_ids.json", "w", encoding="utf-8") as f:
+        with open(housing_crawler_config.file_paths.agency.estate_id_json, "w", encoding="utf-8") as f:
             json.dump(estate_ids, f, ensure_ascii=False, indent=4)
 
     def _legacy_fetch_transaction_data_given_building_id(self, building_id):
@@ -225,7 +221,7 @@ class AgencyCrawler:
         Fetch transaction data for a given building ID (e.g. B000063459)
         Does not work on latest buildings with Phase IDs
         """
-        base_url = "https://app2.hkp.com.hk/utx/tx_history.jsp"
+        base_url = housing_crawler_config.urls.agency.legacy_building_transactions
         params = {
             "bldg_id": building_id,
             "lang": "en",
@@ -259,14 +255,14 @@ class AgencyCrawler:
             cols = [ele.get_text(strip=True) for ele in cols]
             data.append(cols)
         df = pd.DataFrame(data, columns=headers)
-        df.to_csv("transactions.csv", index=False)
+        df.to_csv(housing_crawler_config.file_paths.agency.transaction_data_csv, index=False)
 
     def _legacy_fetch_building_ids_given_estate_id(self, estate_id):
         """
         Fetch building IDs for a given estate ID. (e.g. E00024)
         Does not work on latest estates with Phase IDs
         """
-        base_url = f"https://app2.hkp.com.hk/utx/index.jsp"
+        base_url = housing_crawler_config.urls.agency.legacy_building_transactions
         params = {
             "est_id": estate_id,
             "lang": "zh",

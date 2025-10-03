@@ -25,7 +25,8 @@ source venv/bin/activate  # On Windows use `venv\Scripts\activate`
 ```bash
 pip install -r requirements.txt
 ```
-4. Run the crawler:
+4. Create a `config.yml` file in the `src` directory based on the provided `config.yml.template` and fill in the necessary details (e.g., API tokens).
+5. Run the crawler:
 ```bash
 python src/main.py
 ```
