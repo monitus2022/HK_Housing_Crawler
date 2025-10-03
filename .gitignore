@@ -4,3 +4,4 @@ testing.*
 *.json
 __pycache__
 *.db
+*.yml

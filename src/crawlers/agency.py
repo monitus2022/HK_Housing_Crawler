@@ -90,7 +90,7 @@ class AgencyCrawler:
             ]
         return data
 
-    def fetch_transaction_history_given_building_id(self, building_id):
+    def fetch_transaction_history_given_building_id(self, building_id) -> dict:
         """
         Fetch transaction history for a given building ID (e.g. B000063459)
         """
@@ -131,7 +131,7 @@ class AgencyCrawler:
                 )
             time.sleep(0.25)
 
-    def fetch_estate_info_and_building_ids_given_estate_id(self, estate_id):
+    def fetch_estate_info_and_building_ids_given_estate_id(self, estate_id) -> tuple[dict, list]:
         """
         Fetch estate info and building IDs for a given estate ID (e.g. E00024)
         """
@@ -166,9 +166,9 @@ class AgencyCrawler:
         data = response.json()
         return data
 
-    def fetch_estate_id_and_info(self):
+    def fetch_estate_id_and_info(self) -> None:
         """
-        Fetch all estate IDs and info from the paginated API.
+        Fetch all estate IDs and info from the paginated API and output to json.
         """
         base_url = "https://data.hkp.com.hk/search/v1/estates"
         params = {
@@ -212,7 +212,7 @@ class AgencyCrawler:
             # Collect estate IDs for further processing
             estate_ids.extend([estate["id"] for estate in estate_data])
 
-            time.sleep(1)
+            time.sleep(0.25)
 
         with open("estate_info.json", "w", encoding="utf-8") as f:
             json.dump(all_estates, f, ensure_ascii=False, indent=4)
