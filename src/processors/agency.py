@@ -8,13 +8,24 @@ class AgencyProcessor(BaseProcessor):
     def __init__(self):
         super().__init__()
         self.connect_db()
-        self.transaction_file_path = "transactions.csv"
+        self.legacy_transaction_file_path = "transactions.csv"
+        self.transaction_file_path = "all_transactions.json"
         self.estate_info_json_path = "estate_info.json"
 
-    def process_transaction_table(self) -> pd.DataFrame:
+    def process_transaction_json(self) -> pd.DataFrame:
+        """
+        Process the transaction JSON file.
+        Output a cleaned DataFrame to be stored in the database.
+        """
+        with open(self.transaction_file_path, "r", encoding="utf-8") as file:
+            data = json.load(file)
+        
+
+    def _legacy_process_transaction_table(self) -> pd.DataFrame:
         """
         Process the transaction table CSV file.
         Cleans and converts data types for specific columns.
+        Only applies to the legacy CSV format.
         """
         int_columns = ["Area(Saleable)","Area(Gross)","Price(m)","Price/ft2(Saleable)","Price/ft2(Gross)"]
         datetime_columns = ["Trans. Date", "Last Transaction Date"]

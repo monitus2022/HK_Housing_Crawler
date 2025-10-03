@@ -1,0 +1,70 @@
+example_transaction_json = [{
+  "building": {
+    "id": "B000001259",
+    "name": "百老匯街1號",
+    "bldg_type": "APARTMENT",
+    "estate": {
+      "id": "E00061",
+      "name": "美孚新邨"
+    },
+    "phase": {
+      "id": "P000000193",
+      "name": "一期"
+    }
+  },
+  "data": [
+    {
+      "unit_id": "U000761267",
+      "unit_type": "APARTMENT",
+      "floor": "20",
+      "floor_seq": 18,
+      "flat": "A",
+      "flat_name": "A",
+      "area": 820,
+      "net_area": 621,
+      "transactions": []
+    },
+    {
+      "unit_id": "U000761305",
+      "unit_type": "APARTMENT",
+      "floor": "20",
+      "floor_seq": 18,
+      "flat": "C",
+      "flat_name": "C",
+      "area": 940,
+      "net_area": 550,
+      "transactions": [
+        {
+          "id": "NO2006112506112501010321",
+          "tx_type": "S",
+          "tx_date": "2006-11-24T16:00:00.000Z",
+          "feature": [],
+          "area": "940",
+          "net_area": "550",
+          "price": "1850000",
+          "last_tx_date": "2004-03-30T16:00:00.000Z",
+          "gain": "11.45",
+          "mkt_type": "2",
+          "bedroom": "2",
+          "sitting_room": "1",
+          "url_desc": "https://www.hkp.com.hk/zh-hk/transaction/%E4%B9%9D%E9%BE%8D-%E4%B8%80%E6%9C%9F-NO2006112506112501010321",
+          "net_ft_price": 3364
+        },
+        {
+          "id": "UB2003120509071169",
+          "tx_type": "S",
+          "tx_date": "2003-12-04T16:00:00.000Z",
+          "feature": [],
+          "area": "940",
+          "net_area": "550",
+          "price": "1000000",
+          "mkt_type": "2",
+          "bedroom": "2",
+          "sitting_room": "1",
+          "url_desc": "https://www.hkp.com.hk/zh-hk/transaction/%E4%B9%9D%E9%BE%8D-%E4%B8%80%E6%9C%9F-UB2003120509071169",
+          "net_ft_price": 1818
+        }
+      ]
+    }
+  ]
+}]

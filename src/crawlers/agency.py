@@ -8,12 +8,14 @@ from logger import housing_logger
 
 # TODO: Type safe with pydantic
 
+
 class AgencyCrawler:
     def __init__(self):
         self.headers = {
             "accept": "application/json, text/plain, */*",
             "accept-language": "en-US,en;q=0.8",
-            "authorization": "Bearer " + "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJndWlkIjoibXItMjAyNS0wOS0yMS1NX193MFh3VFF3RjI0R1ZWNUo3Yy1OYUhnQU5ZR2h5WngteTV4MThDN254SmNUVXhqeUFhVmEtWFZvN0NZclc3SDlJU2tXaS1JSSIsImlhdCI6MTc1ODQ2NTIwNCwiaXNzIjoid3d3LmhrcC5jb20uaGsifQ.c9ME2M6G7vQDwZuX9eyEwFoYa7S64ZW4wUQONnMd5QdL2XVg5xeVFQfyzq5OtylLLa2VRSlT6xpgS513ptq9bHDvZrHrr0egBMtgvvvpnG03r66TUZBiY7PeBWkYbIMmQiUbGyHB2FRhlEJfezrXPspa6ZvCYUkYiPlu-8IvzD7x79vJMfIB9q2htYGI6mfvd9F8wkAjAnTYSKUjyy1hM-1VFTEChf4BY7du5WPJ2buJYW_3DZ_vkOnB5FZt60d7pgTIhYpqMykoYkHq3aOj8bE-I-Gzt1tb9Hq0q7xojEeABiuwH2ffVR3p8zqHN1g3ht70tkSdzfoXb45K8J858Oqcwzs9vlV0RJ30x2lhN5LEdrbdpMj-A1rhxkXvg_6HHqcUC5aafZdo9H0vpq3kt1ixsoRIJZi2wxUFxzag2XPc6T7_uEC5Nop2x1JCZpeTGGi2rwzJhmDJodoSxWMw0ffOFcgposXPWoFOlLWp2MDOJ4kSViOj0R-R6jXrsy1EsFbFWjlTVaNLcuL8i0IAIeZhB1vmlasdyxxAGZb4LESwKcgqJawlsiPg_c_y-whc1cUXIsHosjSlP92_s2RmiEk7ybRMLxdtRqLweZ478nEPBX6YoS4WFSy2D_8uSzKapjDQMWM3YkM8vcNKXPv2I6QI87UqZ0CNIvrDdhXDcd4", # Insert your token here via https://www.hkp.com.hk/zh-hk/list/estate
+            "authorization": "Bearer "
+            + "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJndWlkIjoibXItMjAyNS0wOS0yMS1NX193MFh3VFF3RjI0R1ZWNUo3Yy1OYUhnQU5ZR2h5WngteTV4MThDN254SmNUVXhqeUFhVmEtWFZvN0NZclc3SDlJU2tXaS1JSSIsImlhdCI6MTc1ODQ2NTIwNCwiaXNzIjoid3d3LmhrcC5jb20uaGsifQ.c9ME2M6G7vQDwZuX9eyEwFoYa7S64ZW4wUQONnMd5QdL2XVg5xeVFQfyzq5OtylLLa2VRSlT6xpgS513ptq9bHDvZrHrr0egBMtgvvvpnG03r66TUZBiY7PeBWkYbIMmQiUbGyHB2FRhlEJfezrXPspa6ZvCYUkYiPlu-8IvzD7x79vJMfIB9q2htYGI6mfvd9F8wkAjAnTYSKUjyy1hM-1VFTEChf4BY7du5WPJ2buJYW_3DZ_vkOnB5FZt60d7pgTIhYpqMykoYkHq3aOj8bE-I-Gzt1tb9Hq0q7xojEeABiuwH2ffVR3p8zqHN1g3ht70tkSdzfoXb45K8J858Oqcwzs9vlV0RJ30x2lhN5LEdrbdpMj-A1rhxkXvg_6HHqcUC5aafZdo9H0vpq3kt1ixsoRIJZi2wxUFxzag2XPc6T7_uEC5Nop2x1JCZpeTGGi2rwzJhmDJodoSxWMw0ffOFcgposXPWoFOlLWp2MDOJ4kSViOj0R-R6jXrsy1EsFbFWjlTVaNLcuL8i0IAIeZhB1vmlasdyxxAGZb4LESwKcgqJawlsiPg_c_y-whc1cUXIsHosjSlP92_s2RmiEk7ybRMLxdtRqLweZ478nEPBX6YoS4WFSy2D_8uSzKapjDQMWM3YkM8vcNKXPv2I6QI87UqZ0CNIvrDdhXDcd4",  # Insert token here via https://www.hkp.com.hk/zh-hk/list/estate
             "origin": "https://www.hkp.com.hk",
             "referer": "https://www.hkp.com.hk/",
             "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36",
@@ -35,20 +37,117 @@ class AgencyCrawler:
             housing_logger.error(f"Error making request to {url}: {str(e)}")
             return None
 
+    def fetch_all_transaction_history(self):
+        """
+        Fetch transaction history for all building IDs listed in all_building_ids.json
+        """
+        with open("all_building_ids.json", "r", encoding="utf-8") as f:
+            building_ids = json.load(f)
+        all_transactions = []
+        output_path = "all_transactions.json"
+        housing_logger.info(
+            f"Starting to fetch transaction history for {len(building_ids)} buildings"
+        )
+
+        for idx, building_id in enumerate(building_ids):
+            building_data = self.fetch_transaction_history_given_building_id(
+                building_id
+            )
+            if building_data and building_data.get("data", []):
+                building_data["data"] = self.clean_single_building_transaction_data(
+                    building_data.get("data", [])
+                )
+                all_transactions.append(building_data)
+            # Save progress every 100 buildings
+            if idx != 0 and idx % 100 == 0:
+                with open(output_path, "w", encoding="utf-8") as out_f:
+                    json.dump(all_transactions, out_f, ensure_ascii=False, indent=2)
+                housing_logger.info(
+                    f"Fetched transaction history for {idx+1}/{len(building_ids)} buildings so far"
+                )
+            time.sleep(0.25)
+
+    @staticmethod
+    def clean_single_building_transaction_data(data) -> list[dict]:
+        """
+        Remove unnecessary fields from a single building transaction data to reduce storage size
+        Further processing can be done in the processor class
+        Args:
+            data (list): Raw transaction data from 'data' field for a single building
+        """
+        for flat_unit in data:
+            flat_unit.pop("unit_id", None)
+            flat_unit.pop("unit_type", None)
+            if not flat_unit["transactions"]:
+                continue
+            flat_unit["transactions"] = [
+                {
+                    k: v
+                    for k, v in tx.items()
+                    if k not in ["id", "tx_type", "feature", "url_desc"]
+                }
+                for tx in flat_unit.get("transactions", [])
+            ]
+        return data
+
     def fetch_transaction_history_given_building_id(self, building_id):
         """
         Fetch transaction history for a given building ID (e.g. B000063459)
         """
-        base_url = f"https://data.hkp.com.hk/info/v1/transactions/buildings/{building_id}"
+        base_url = (
+            f"https://data.hkp.com.hk/info/v1/transactions/buildings/{building_id}"
+        )
         params = {"lang": "en"}
-        response = self._make_request(
-            base_url, 
-            params=params
-            )
+        response = self._make_request(base_url, params=params)
         if not response:
             return None
         data = response.json()
         return data
+
+    def fetch_all_building_ids(self) -> None:
+        """
+        Fetch all building IDs from all estates listed in estate_ids.json
+        """
+        with open("estate_ids.json", "r", encoding="utf-8") as f:
+            estate_ids = json.load(f)
+        all_building_ids = []
+        output_path = "all_building_ids.json"
+        housing_logger.info(
+            f"Starting to fetch building IDs for {len(estate_ids)} estates"
+        )
+
+        for idx, estate_id in enumerate(estate_ids):
+            _, building_ids = self.fetch_estate_info_and_building_ids_given_estate_id(
+                estate_id
+            )
+            if building_ids:
+                all_building_ids.extend(building_ids)
+            # Save progress every 100 estates
+            if idx != 0 and idx % 100 == 0:
+                with open(output_path, "w", encoding="utf-8") as out_f:
+                    json.dump(all_building_ids, out_f, ensure_ascii=False, indent=2)
+                housing_logger.info(
+                    f"Fetched building IDs for {idx+1}/{len(estate_ids)} estates so far"
+                )
+            time.sleep(0.25)
+
+    def fetch_estate_info_and_building_ids_given_estate_id(self, estate_id):
+        """
+        Fetch estate info and building IDs for a given estate ID (e.g. E00024)
+        """
+        base_url = f"https://data.hkp.com.hk/info/v1/estates/{estate_id}"
+        params = {"lang": "en"}
+        response = self._make_request(base_url, params=params)
+        if not response:
+            return None
+        data = response.json()
+        building_ids = []
+        for phase in data.get("phase", []):
+            building_ids.extend(
+                [b.get("id") for b in phase.get("buildings", []) if "id" in b]
+            )
+        # TODO: Currently using building ids for transaction history fetch only
+        return {"estate_info": None}, building_ids
 
     def fetch_estate_market_info_given_estate_id(self, estate_id):
         """
@@ -61,10 +160,7 @@ class AgencyCrawler:
             "monthly": "true",
             "id": estate_id,
         }
-        response = self._make_request(
-            base_url, 
-            params=params
-            )
+        response = self._make_request(base_url, params=params)
         if not response:
             return None
         data = response.json()
@@ -89,13 +185,12 @@ class AgencyCrawler:
         estate_ids = []
 
         while params["page"] * params["limit"] <= estate_count:
-            response = self._make_request(
-                base_url, 
-                params=params
-                )
+            response = self._make_request(base_url, params=params)
 
             if response.status_code != 200:
-                housing_logger.error(f"Error fetching page {params['page']}: {response.status_code}")
+                housing_logger.error(
+                    f"Error fetching page {params['page']}: {response.status_code}"
+                )
                 break
 
             data = response.json()
@@ -104,7 +199,9 @@ class AgencyCrawler:
 
             estate_data = data["result"]
             all_estates.extend(estate_data)
-            housing_logger.info(f"Fetched page {params['page']}, got {len(estate_data)} estates")
+            housing_logger.info(
+                f"Fetched page {params['page']}, got {len(estate_data)} estates"
+            )
 
             # Fix fetch size
             if estate_count == float("inf"):
@@ -119,7 +216,7 @@ class AgencyCrawler:
 
         with open("estate_info.json", "w", encoding="utf-8") as f:
             json.dump(all_estates, f, ensure_ascii=False, indent=4)
-        
+
         with open("estate_ids.json", "w", encoding="utf-8") as f:
             json.dump(estate_ids, f, ensure_ascii=False, indent=4)
 
@@ -133,11 +230,7 @@ class AgencyCrawler:
             "bldg_id": building_id,
             "lang": "en",
         }
-        response = self._make_request(
-            base_url, 
-            params=params,
-            headers=self.headers
-            )
+        response = self._make_request(base_url, params=params, headers=self.headers)
         if not response:
             return
 
@@ -151,11 +244,15 @@ class AgencyCrawler:
         data = []
         tbody = table.find("tbody")
         if not tbody:
-            housing_logger.warning(f"No transaction data found for building ID {building_id}")
+            housing_logger.warning(
+                f"No transaction data found for building ID {building_id}"
+            )
             return
         rows = tbody.find_all("tr")
         if not rows:
-            housing_logger.warning(f"No transaction data found for building ID {building_id}")
+            housing_logger.warning(
+                f"No transaction data found for building ID {building_id}"
+            )
             return
         for row in rows:
             cols = row.find_all("td")
@@ -163,7 +260,7 @@ class AgencyCrawler:
             data.append(cols)
         df = pd.DataFrame(data, columns=headers)
         df.to_csv("transactions.csv", index=False)
-        
+
     def _legacy_fetch_building_ids_given_estate_id(self, estate_id):
         """
         Fetch building IDs for a given estate ID. (e.g. E00024)
@@ -174,11 +271,7 @@ class AgencyCrawler:
             "est_id": estate_id,
             "lang": "zh",
         }
-        response = self._make_request(
-            base_url, 
-            params=params,
-            headers=self.headers
-            )
+        response = self._make_request(base_url, params=params, headers=self.headers)
         if not response:
             return []
         soup = BeautifulSoup(response.content, "html.parser")

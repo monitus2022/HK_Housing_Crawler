@@ -8,8 +8,8 @@ A web crawler for scraping housing data in Hong Kong using traditional web scrap
   - Transaction data: Daily
   - Aggregated data: Weekly
 - Data sources:
-    - [Centaline Property Agency Limited](https://hk.centanet.com/estate/en/index)
-    - [Rating and Valuation Department](https://www.rvd.gov.hk/en/publications/property_market_statistics.html)
+    - [Hong Kong Property](https://www.hkp.com.hk/zh-hk/list/estate)
+    - [Rating and Valuation Department, Hong Kong Gov](https://www.rvd.gov.hk/en/publications/property_market_statistics.html)
 - Data storage: SQLite database
 - Data usage: For data visualization and chatbot application
 
@@ -32,5 +32,5 @@ python src/main.py
 
 ## Disclaimer
 
-This project is for educational purposes only. 
-Ensure compliance with the terms of service of the websites you scrape.
+This project is for educational purposes only.
+All data sourced from Hong Kong Property is public and used in accordance with their [Terms of Service](https://www.hkp.com.hk/disclaim.html).
