@@ -4,9 +4,6 @@ A web crawler for scraping housing data in Hong Kong using traditional web scrap
 
 ## Specs
 
-- Crawling frequency:
-  - Transaction data: Daily
-  - Aggregated data: Weekly
 - Data sources:
     - [Hong Kong Property](https://www.hkp.com.hk/zh-hk/list/estate)
     - [Rating and Valuation Department, Hong Kong Gov](https://www.rvd.gov.hk/en/publications/property_market_statistics.html)

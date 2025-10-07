@@ -169,7 +169,7 @@ class AgencyCrawler:
         base_url = housing_crawler_config.urls.agency.estate_info
         params = {
             "hash": "true",
-            "lang": "zh-hk",
+            "lang": "en",
             "currency": "HKD",
             "unit": "feet",
             "search_behavior": "normal",

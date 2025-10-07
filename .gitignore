@@ -1,7 +1,5 @@
 env
 testing.*
-*.csv
-*.json
 __pycache__
-*.db
 *.yml
+data/
