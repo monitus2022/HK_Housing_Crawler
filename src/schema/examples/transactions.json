@@ -1,4 +1,4 @@
-example_transaction_json = [{
+[{
   "building": {
     "id": "B000001259",
     "name": "百老匯街1號",

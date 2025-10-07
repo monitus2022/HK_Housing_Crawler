@@ -1,48 +1,25 @@
-class SqlQueries:
-    
-    @staticmethod
-    def create_table_queries(fields: dict[str, str]) -> str:
-        """
-        Generate a CREATE TABLE SQL query based on the provided fields.
-        
-        Args:
-            fields (dict): A dict with col names: data types
-        """
-        columns = ",\n    ".join([f"{col} {dtype}" for col, dtype in fields.items()])
-        return f"""
-        CREATE TABLE IF NOT EXISTS properties (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            {columns}
-        );
-        """
+from typing import Optional
 
-    @staticmethod
-    def insert_query(table_name: str, fields: dict[str, str]) -> str:
-        """
-        Dynamically generate INSERT query
-        
-        Args:
-            fields (dict): A dict with col names: data types
-        """
-        field_names = list(fields.keys())
-        placeholders = ['?' for _ in fields]
-        
-        query = f"""
-        INSERT INTO {table_name} ({', '.join(field_names)})
-        VALUES ({', '.join(placeholders)});
-        """
-        return query
+def generate_create_table_query(
+    table_name: str, columns: Optional[dict] = None
+) -> str:
+    """
+    Generate a CREATE TABLE SQL query.
 
+    Parameters:
+        table_name (str): The name of the table to create.
+        columns (dict): A dictionary where keys are column names and values are data types.
 
-    @staticmethod
-    def update_by_id_query(fields: dict[str, str]) -> str:
-        """
-        Generate an UPDATE BY ID SQL query for the properties table.
-        """
-        set_clause = ", ".join([f"{col} = ?" for col in fields.keys()])
-        return f"""
-        UPDATE properties
-        SET {set_clause}
-        WHERE id = ?;
-        """
-        
+    Returns:
+        str: The generated CREATE TABLE SQL query.
+    """
+    if not columns:
+        query = f"CREATE TABLE {table_name} AS SELECT * FROM temp_df"
+    else:
+        cols_with_types = ", ".join(
+            [f"{col} {dtype}" for col, dtype in columns.items()]
+        )
+        create_query = f"CREATE TABLE {table_name} ({cols_with_types})"
+        insert_query = f"INSERT INTO {table_name} SELECT * FROM temp_df"
+        query = f"{create_query}; {insert_query};"
+    return query
