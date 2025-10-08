@@ -30,5 +30,3 @@ ESTATE_INFO_SCHEMA = {
     "parent_estate_id": "TEXT",
     "parent_estate_name": "TEXT",
 }
-
-estate_info_example = 

@@ -32,6 +32,9 @@ class UrlsAgency(BaseModel):
     legacy_building_transactions: str
     legacy_building_ids: str
 
+class Database(BaseModel):
+    table_names: dict[str, str]  # e.g., {"estate_info": "estate_info"}
+
 class Headers(BaseModel):
     agency: HeadersAgency
 
@@ -48,6 +51,7 @@ class HousingCrawlerConfig(BaseModel):
     headers: Headers
     urls: Urls
     file_paths: FilePaths
+    database: Database
 
 # Load config from YAML
 def load_config() -> HousingCrawlerConfig:

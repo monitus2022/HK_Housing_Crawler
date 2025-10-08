@@ -3,6 +3,7 @@ from .base import BaseProcessor
 import pandas as pd
 import json
 from schema import ESTATE_INFO_SCHEMA
+from config import housing_crawler_config
 
 
 class AgencyProcessor(BaseProcessor):
@@ -37,7 +38,10 @@ class AgencyProcessor(BaseProcessor):
             data = json.load(file)
         df = pd.DataFrame(data)
         self.save_dataframe_to_db(
-            df, table_name="estate_info", dtypes=ESTATE_INFO_SCHEMA, if_exists="replace"
+            df,
+            table_name=housing_crawler_config.database.table_names["estate_info"],
+            dtypes=ESTATE_INFO_SCHEMA,
+            if_exists="replace",
         )
         self.close_db()
 
@@ -71,9 +75,7 @@ class AgencyProcessor(BaseProcessor):
         return output_dict
 
     def get_estate_ids_from_processed_estate_info(self) -> list[str]:
-        with open(
-            "processed_" + self.estate_info_json_path, "r", encoding="utf-8"
-        ) as file:
+        with open(self.processed_estate_info_json_path, "r", encoding="utf-8") as file:
             data = json.load(file)
         return [item["id"] for item in data if "id" in item]
 
