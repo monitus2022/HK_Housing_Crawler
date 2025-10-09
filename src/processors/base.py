@@ -3,7 +3,7 @@ import duckdb
 from typing import Optional
 from pathlib import Path
 from logger import housing_logger
-from sql_queries import generate_create_table_query
+from .sql_queries import generate_create_table_query
 
 working_dir = Path(__file__).parent.parent.parent
 
