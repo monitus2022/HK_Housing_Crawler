@@ -1,0 +1,6 @@
+{
+    "all_estate_info": "https://data.hkp.com.hk/search/v1/estates?hash=true&lang=en&currency=HKD&unit=feet&search_behavior=normal&limit=10&page=1",
+    "single_estate_info": "https://data.hkp.com.hk/info/v1/estates/E000004419?lang=en",
+    "estate_market_info": "https://data.hkp.com.hk/info/v1/market_stat?lang=zh-hk&type=estate&monthly=true&est_ids=E000004419",
+    "building_transactions": "https://data.hkp.com.hk/info/v1/transactions/buildings/B000063458?lang=zh-hk&firsthand=false"
+}

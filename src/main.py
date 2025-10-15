@@ -1,11 +1,9 @@
-from crawlers.agency import *
-from processors.agency import *
-from config import housing_crawler_config
+from crawlers.agency import AgencyCrawler
+from processors.agency import AgencyProcessor
 
 def app():
-    # print(housing_crawler_config.agency_api.headers)
     housing_crawler = AgencyCrawler()
-    housing_crawler.fetch_estate_id_and_info()
+    housing_crawler.fetch_all_building_ids()
 
 if __name__ == "__main__":
     app()

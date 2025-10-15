@@ -11,7 +11,8 @@ with open(config_path, 'r', encoding='utf-8') as f:
     yaml_data = yaml.safe_load(f)
 
 class AgencyUrls(BaseModel):
-    estate_info: str
+    all_estate_info: str
+    single_estate_info: str
     estate_market_info: str
     building_transactions: str
     legacy_building_transactions: str

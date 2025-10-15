@@ -44,7 +44,8 @@ class AgencyCrawler(BaseCrawler):
         self.transactions_file_path = self.files_path / housing_crawler_config.storage.files.outputs.transactions_json
 
     def _set_request_urls(self):
-        self.estate_info_url = housing_crawler_config.agency_api.urls.estate_info
+        self.all_estate_info_url = housing_crawler_config.agency_api.urls.all_estate_info
+        self.single_estate_info_url = housing_crawler_config.agency_api.urls.single_estate_info
         self.estate_market_info_url = housing_crawler_config.agency_api.urls.estate_market_info
         self.building_transactions_url = housing_crawler_config.agency_api.urls.building_transactions
 
@@ -104,7 +105,7 @@ class AgencyCrawler(BaseCrawler):
         """
         Fetch transaction history for a given building ID (e.g. B000063459)
         """
-        base_url = self.building_transactions_url + f"/{building_id}"
+        base_url = self.building_transactions_url.format(building_id=building_id)
         params = SIMPLE_FETCH_PARAMS.copy()
         response = self._make_request(base_url, params=params)
         if not response:
@@ -125,7 +126,7 @@ class AgencyCrawler(BaseCrawler):
         )
 
         for idx, estate_id in enumerate(estate_ids):
-            _, building_ids = self.fetch_estate_info_and_building_ids_given_estate_id(estate_id)
+            _, building_ids = self._fetch_estate_info_and_building_ids_given_estate_id(estate_id)
             if building_ids:
                 all_building_ids.extend(building_ids)
             # Save progress every 100 estates
@@ -137,11 +138,11 @@ class AgencyCrawler(BaseCrawler):
                 )
             time.sleep(0.25)
 
-    def fetch_estate_info_and_building_ids_given_estate_id(self, estate_id) -> Optional[tuple[dict, list]]:
+    def _fetch_estate_info_and_building_ids_given_estate_id(self, estate_id) -> Optional[tuple[dict, list]]:
         """
         Fetch estate info and building IDs for a given estate ID (e.g. E00024)
         """
-        base_url = self.estate_info_url + f"/{estate_id}"
+        base_url = self.single_estate_info_url.format(estate_id=estate_id)
         params = SIMPLE_FETCH_PARAMS.copy()
         response = self._make_request(base_url, params=params)
         if not response:
@@ -155,7 +156,7 @@ class AgencyCrawler(BaseCrawler):
         # TODO: Currently using building ids for transaction history fetch only
         return {"estate_info": None}, building_ids
 
-    def fetch_estate_market_info_given_estate_id(self, estate_id):
+    def _fetch_estate_market_info_given_estate_id(self, estate_id):
         """
         Fetch market info for a given estate ID (e.g. E00024)
         """
@@ -173,7 +174,7 @@ class AgencyCrawler(BaseCrawler):
         """
         Fetch all estate IDs and info from the paginated API and output to json.
         """
-        base_url = self.estate_info_url
+        base_url = self.all_estate_info_url
         params = FETCH_ESTATE_INFO_PARAMS.copy()
         estate_count = float("inf")
         all_estates = []

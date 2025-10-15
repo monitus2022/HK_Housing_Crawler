@@ -3,7 +3,8 @@
 # API endpoints for data scraping
 agency_api:
   urls:
-    estate_info: "https://data.hkp.com.hk/search/v1/estates"
+    all_estate_info: "https://data.hkp.com.hk/search/v1/estates"
+    single_estate_info: "https://data.hkp.com.hk/info/v1/estates"
     estate_market_info: "https://data.hkp.com.hk/info/v1/market_stat"
     building_transactions: "https://data.hkp.com.hk/info/v1/transactions/buildings"
     legacy_building_transactions: "https://app2.hkp.com.hk/utx/tx_history.jsp"
