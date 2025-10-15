@@ -53,30 +53,52 @@ class AgencyCrawler(BaseCrawler):
         """
         Fetch transaction history for all building IDs listed in all_building_ids.json
         """
+        housing_logger.info("Starting to fetch all transaction history for all buildings")
         with open(self.building_id_file_path, "r", encoding="utf-8") as f:
-            building_ids = json.load(f)
+            estate_building_ids = json.load(f)
+        estate_ids = list(estate_building_ids.keys())
         all_transactions = []
-        output_path = self.transactions_file_path
 
-        # Fetch transaction history for each building ID        
-        housing_logger.info(
-            f"Starting to fetch transaction history for {len(building_ids)} buildings"
-        )
-        for idx, building_id in enumerate(building_ids):
-            building_data = self.fetch_transaction_history_given_building_id(building_id)
-            if building_data and building_data.get("data", []):
-                building_data["data"] = self.clean_single_building_transaction_data(
-                    building_data.get("data", [])
+        # Check if existing transactions file exists to avoid duplicates
+        output_path = self.transactions_file_path
+        try:
+            with open(output_path, "r", encoding="utf-8") as f:
+                all_transactions = json.load(f)
+                existing_estate_ids = {list(item.keys())[0] for item in all_transactions}
+                housing_logger.info(
+                    f"Loaded existing transaction data for {len(existing_estate_ids)} estates from {self.transactions_file_path}"
                 )
-                all_transactions.append(building_data)
-            # Save progress every 100 buildings
-            if idx != 0 and idx % 100 == 0:
+                # Remove already loaded estate IDs from the list to fetch
+                estate_ids = [eid for eid in estate_ids if eid not in existing_estate_ids]
+        except FileNotFoundError:
+            housing_logger.info(f"No existing transaction data found at {output_path}, starting fresh.")
+
+        # Fetch transaction history for each building ID
+        housing_logger.info(
+            f"Starting to fetch transaction history for {len(estate_ids)} estates"
+        )
+        batched_transactions = {}
+        for estate_id, building_ids in estate_building_ids.items():
+            estate_transaction_data = {estate_id: []}
+            for building_id in building_ids:
+                building_data = self._fetch_transaction_history_given_building_id(building_id)
+                if building_data and building_data.get("data", []):
+                    building_data["data"] = self.clean_single_building_transaction_data(
+                        building_data.get("data", [])
+                    )
+                    estate_transaction_data[estate_id].append(building_data)
+            batched_transactions.update(estate_transaction_data)
+
+            # Save progress every 100 estates and at the end
+            if estate_id != 0 and (estate_id + 1) % 100 == 0 or estate_id == len(estate_ids) - 1:
+                all_transactions.append(estate_transaction_data)
                 with open(output_path, "w", encoding="utf-8") as out_f:
                     json.dump(all_transactions, out_f, ensure_ascii=False, indent=2)
                 housing_logger.info(
-                    f"Fetched transaction history for {idx+1}/{len(building_ids)} buildings so far"
+                    f"Fetched transaction history for {estate_id + 1}/{len(estate_ids)} estates so far"
                 )
             time.sleep(0.25)
+        housing_logger.info(f"Fetched transaction history for all {len(building_ids)} buildings")
 
     @staticmethod
     def clean_single_building_transaction_data(data) -> list[dict]:
@@ -101,7 +123,7 @@ class AgencyCrawler(BaseCrawler):
             ]
         return data
 
-    def fetch_transaction_history_given_building_id(self, building_id) -> Optional[dict[str, list|dict]]:
+    def _fetch_transaction_history_given_building_id(self, building_id) -> Optional[dict[str, list|dict]]:
         """
         Fetch transaction history for a given building ID (e.g. B000063459)
         """
@@ -117,28 +139,48 @@ class AgencyCrawler(BaseCrawler):
         """
         Fetch all building IDs from all estates listed in estate_ids.json
         """
+        housing_logger.info("Starting to fetch all building IDs from all estates")
+        loaded_estate_ids = set()
+        output_path = self.building_id_file_path
         with open(self.estate_id_file_path, "r", encoding="utf-8") as f:
             estate_ids = json.load(f)
-        all_building_ids = []
-        output_path = self.building_id_file_path
+
+        # If file already exists, load existing building IDs to avoid duplicates
+        try:
+            with open(output_path, "r", encoding="utf-8") as f:
+                existing_building_id_data = json.load(f)
+                loaded_estate_ids = set(existing_building_id_data.keys())
+                housing_logger.info(
+                    f"Loaded building IDs for {len(loaded_estate_ids)} existing estates from {output_path}"
+                )
+                # Remove already loaded estate IDs from the list to fetch
+                estate_ids = [eid for eid in estate_ids if eid not in loaded_estate_ids]
+        except FileNotFoundError:
+            housing_logger.info(f"No existing building IDs found at {output_path}, starting fresh.")
         housing_logger.info(
             f"Starting to fetch building IDs for {len(estate_ids)} estates"
         )
 
+        batched_building_ids = {}
         for idx, estate_id in enumerate(estate_ids):
             _, building_ids = self._fetch_estate_info_and_building_ids_given_estate_id(estate_id)
-            if building_ids:
-                all_building_ids.extend(building_ids)
-            # Save progress every 100 estates
-            if idx != 0 and idx % 100 == 0:
+            batched_building_ids.update(building_ids)
+
+            # Save progress every 100 estates or at the end
+            if idx != 0 and (idx + 1) % 100 == 0 or idx == len(estate_ids) - 1:
+                existing_building_id_data.update(batched_building_ids)
                 with open(output_path, "w", encoding="utf-8") as out_f:
-                    json.dump(all_building_ids, out_f, ensure_ascii=False, indent=2)
+                    json.dump(existing_building_id_data, out_f, ensure_ascii=False, indent=2)
+                batched_building_ids = {}
                 housing_logger.info(
                     f"Fetched building IDs for {idx+1}/{len(estate_ids)} estates so far"
                 )
             time.sleep(0.25)
+        housing_logger.info(f"Saved all building IDs to {output_path}")
 
-    def _fetch_estate_info_and_building_ids_given_estate_id(self, estate_id) -> Optional[tuple[dict, list]]:
+    def _fetch_estate_info_and_building_ids_given_estate_id(
+            self, estate_id: str
+            ) -> Optional[tuple[dict, dict[str, list]]]:
         """
         Fetch estate info and building IDs for a given estate ID (e.g. E00024)
         """
@@ -148,13 +190,16 @@ class AgencyCrawler(BaseCrawler):
         if not response:
             return None
         data = response.json()
+
+        # Extract building IDs from the nested phase -> buildings structure
+        estate_id = data.get("id", "")
         building_ids = []
         for phase in data.get("phase", []):
             building_ids.extend(
                 [b.get("id") for b in phase.get("buildings", []) if "id" in b]
             )
         # TODO: Currently using building ids for transaction history fetch only
-        return {"estate_info": None}, building_ids
+        return {"estate_info": None}, {estate_id: building_ids}
 
     def _fetch_estate_market_info_given_estate_id(self, estate_id):
         """
@@ -174,6 +219,7 @@ class AgencyCrawler(BaseCrawler):
         """
         Fetch all estate IDs and info from the paginated API and output to json.
         """
+        housing_logger.info("Starting to fetch all estate IDs and info")
         base_url = self.all_estate_info_url
         params = FETCH_ESTATE_INFO_PARAMS.copy()
         estate_count = float("inf")
