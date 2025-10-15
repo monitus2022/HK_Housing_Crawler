@@ -6,12 +6,20 @@ import time
 import json
 from config import housing_crawler_config
 from logger import housing_logger
-from pathlib import Path
 from typing import Optional
 from .base import BaseCrawler
+from .request_params import FETCH_ESTATE_INFO_PARAMS, SIMPLE_FETCH_PARAMS, FETCH_ESTATE_MARKET_INFO_PARAMS
 
 
 class AgencyCrawler(BaseCrawler):
+    """
+    Crawler for HKP APIs
+    Dataflow:
+    1. Fetch all estate IDs and info from paginated API -> estate_ids.json,
+    2. For each estate ID, fetch building IDs -> all_building_ids.json
+    3. For each building ID, fetch building, unit info and transaction history -> all_transactions.json
+    Data will be further processed in the processor class
+    """
     def __init__(self):
         super().__init__()
         self.headers = dict(housing_crawler_config.agency_api.headers)
@@ -19,12 +27,19 @@ class AgencyCrawler(BaseCrawler):
         # Init session to persist headers and cookies
         self.session = requests.Session()
         self.session.headers.update(self.headers)
+        self._set_file_paths()
+        self._set_request_urls()
 
+    def _set_file_paths(self):
         self.estate_info_file_path = housing_crawler_config.file_paths.agency.estate_info_json
         self.estate_id_file_path = housing_crawler_config.file_paths.agency.estate_id_json
         self.building_id_file_path = housing_crawler_config.file_paths.agency.building_id_json
         self.transactions_file_path = housing_crawler_config.file_paths.agency.transactions_json
 
+    def _set_request_urls(self):
+        self.estate_info_url = housing_crawler_config.agency_api.urls.estate_info
+        self.estate_market_info_url = housing_crawler_config.agency_api.urls.estate_market_info
+        self.building_transactions_url = housing_crawler_config.agency_api.urls.building_transactions
 
     def fetch_all_transaction_history(self):
         """
@@ -33,15 +48,14 @@ class AgencyCrawler(BaseCrawler):
         with open(self.building_id_file_path, "r", encoding="utf-8") as f:
             building_ids = json.load(f)
         all_transactions = []
-        output_path = housing_crawler_config.file_paths.agency.transactions_json
+        output_path = self.transactions_file_path
+
+        # Fetch transaction history for each building ID        
         housing_logger.info(
             f"Starting to fetch transaction history for {len(building_ids)} buildings"
         )
-
         for idx, building_id in enumerate(building_ids):
-            building_data = self.fetch_transaction_history_given_building_id(
-                building_id
-            )
+            building_data = self.fetch_transaction_history_given_building_id(building_id)
             if building_data and building_data.get("data", []):
                 building_data["data"] = self.clean_single_building_transaction_data(
                     building_data.get("data", [])
@@ -83,8 +97,8 @@ class AgencyCrawler(BaseCrawler):
         """
         Fetch transaction history for a given building ID (e.g. B000063459)
         """
-        base_url = housing_crawler_config.urls.agency.building_transactions + f"/{building_id}"
-        params = {"lang": "en"}
+        base_url = self.building_transactions_url + f"/{building_id}"
+        params = SIMPLE_FETCH_PARAMS.copy()
         response = self._make_request(base_url, params=params)
         if not response:
             return None
@@ -95,10 +109,10 @@ class AgencyCrawler(BaseCrawler):
         """
         Fetch all building IDs from all estates listed in estate_ids.json
         """
-        with open(housing_crawler_config.file_paths.agency.estate_id_json, "r", encoding="utf-8") as f:
+        with open(self.estate_id_file_path, "r", encoding="utf-8") as f:
             estate_ids = json.load(f)
         all_building_ids = []
-        output_path = housing_crawler_config.file_paths.agency.estate_info_json
+        output_path = self.building_id_file_path
         housing_logger.info(
             f"Starting to fetch building IDs for {len(estate_ids)} estates"
         )
@@ -120,8 +134,8 @@ class AgencyCrawler(BaseCrawler):
         """
         Fetch estate info and building IDs for a given estate ID (e.g. E00024)
         """
-        base_url = housing_crawler_config.urls.agency.estate_info + f"/{estate_id}"
-        params = {"lang": "en"}
+        base_url = self.estate_info_url + f"/{estate_id}"
+        params = SIMPLE_FETCH_PARAMS.copy()
         response = self._make_request(base_url, params=params)
         if not response:
             return None
@@ -138,13 +152,10 @@ class AgencyCrawler(BaseCrawler):
         """
         Fetch market info for a given estate ID (e.g. E00024)
         """
-        base_url = housing_crawler_config.urls.agency.estate_market_info
-        params = {
-            "type": "estate",
-            "lang": "en",
-            "monthly": "true",
-            "id": estate_id,
-        }
+        base_url = self.estate_market_info_url
+        params = FETCH_ESTATE_MARKET_INFO_PARAMS.copy()
+        params["id"] = estate_id
+
         response = self._make_request(base_url, params=params)
         if not response:
             return None
@@ -155,29 +166,14 @@ class AgencyCrawler(BaseCrawler):
         """
         Fetch all estate IDs and info from the paginated API and output to json.
         """
-        base_url = housing_crawler_config.urls.agency.estate_info
-        params = {
-            "hash": "true",
-            "lang": "en",
-            "currency": "HKD",
-            "unit": "feet",
-            "search_behavior": "normal",
-            "limit": 1000,
-            "page": 1,
-        }
+        base_url = self.estate_info_url
+        params = FETCH_ESTATE_INFO_PARAMS.copy()
         estate_count = float("inf")
         all_estates = []
         estate_ids = []
 
         while params["page"] * params["limit"] <= estate_count:
             response = self._make_request(base_url, params=params)
-
-            if response.status_code != 200:
-                housing_logger.error(
-                    f"Error fetching page {params['page']}: {response.status_code}"
-                )
-                break
-
             data = response.json()
             if not data or len(data) == 0:
                 break
@@ -199,10 +195,10 @@ class AgencyCrawler(BaseCrawler):
 
             time.sleep(0.25)
 
-        with open(housing_crawler_config.file_paths.agency.estate_info_json, "w", encoding="utf-8") as f:
+        with open(self.estate_info_file_path, "w", encoding="utf-8") as f:
             json.dump(all_estates, f, ensure_ascii=False, indent=4)
 
-        with open(housing_crawler_config.file_paths.agency.estate_id_json, "w", encoding="utf-8") as f:
+        with open(self.estate_id_file_path, "w", encoding="utf-8") as f:
             json.dump(estate_ids, f, ensure_ascii=False, indent=4)
 
     def _legacy_fetch_transaction_data_given_building_id(self, building_id):

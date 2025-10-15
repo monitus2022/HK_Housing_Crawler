@@ -7,8 +7,6 @@ from config import housing_crawler_config
 import sqlite3
 
 
-
-
 class BaseProcessor:
     def __init__(self):
         # Set up data storage paths
