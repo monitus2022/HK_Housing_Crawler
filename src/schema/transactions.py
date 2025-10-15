@@ -1,7 +1,8 @@
-# Note: Split transaction json into 2 tables
+# Note: Split transaction json into 4 tables
 # 1. Building Info
 # 2. Unit info
-# 3. Transaction info per unit
+# 3. Unit features
+# 4. Transaction info per unit
 
 BUILDING_INFO_TABLE_SCHEMA = {
     "estate_id": "TEXT",
@@ -26,10 +27,14 @@ UNIT_INFO_TABLE_SCHEMA = {
     "sitting_room": "INTEGER"
 }
 
+UNIT_FEATURES_TABLE_SCHEMA = {
+    "unit_id": "TEXT",
+    "feature_id": "TEXT",
+    "feature_name": "TEXT",
+}
+
 TRANSACTIONS_TABLE_SCHEMA = {
     "transaction_id": "TEXT",
-    "estate_id": "TEXT",
-    "building_id": "TEXT",
     "unit_id": "TEXT",
     "price": "REAL",
     "tx_date": "TEXT",

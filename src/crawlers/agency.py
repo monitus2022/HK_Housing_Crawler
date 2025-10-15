@@ -5,6 +5,7 @@ from config import housing_crawler_config
 from logger import housing_logger
 from typing import Optional
 from .base import BaseCrawler
+from processors import CrawlerProcessor
 from .request_params import FETCH_ESTATE_INFO_PARAMS, SIMPLE_FETCH_PARAMS, FETCH_ESTATE_MARKET_INFO_PARAMS
 
 
@@ -33,6 +34,7 @@ class AgencyCrawler(BaseCrawler):
         self.session.cookies.update(cookies)
         self._set_file_paths()
         self._set_request_urls()
+        self.crawler_processor = CrawlerProcessor()
 
     def _set_file_paths(self) -> None:
         self.estate_info_file_path = self.files_path / housing_crawler_config.storage.files.outputs.estate_info_json
@@ -47,6 +49,50 @@ class AgencyCrawler(BaseCrawler):
         self.building_transactions_url = housing_crawler_config.agency_api.urls.building_transactions
 
     def fetch_all_building_transactions(self) -> None:
+        """
+        Fetch transactions for all building IDs listed in building_ids.json
+        """
+        housing_logger.info("Starting to fetch all transactions for all buildings")
+        # Load building IDs from file
+        with open(self.building_id_file_path, "r", encoding="utf-8") as f:
+            estate_building_ids = json.load(f)
+        estate_ids = list(estate_building_ids.keys())
+        number_of_buildings = sum(len(bids) for bids in estate_building_ids.values())
+        housing_logger.info(f"Total {number_of_buildings} buildings in {len(estate_ids)} estates to fetch transactions for")
+        
+        # Check existing estate IDs in the database to avoid duplicates
+        try:
+            existing_estate_ids = self.crawler_processor.get_existing_estate_ids()
+            # Remove already loaded estate IDs from the list to fetch
+            estate_ids = [eid for eid in estate_ids if eid not in existing_estate_ids]
+            housing_logger.info(f"Skipping {len(existing_estate_ids)} existing estates already in the database")
+        except Exception as e:
+            housing_logger.info("No existing estates found in the database, starting fresh.")
+            existing_estate_ids = set()
+            
+        building_count = 0
+        housing_logger.info(
+            f"Starting to fetch transaction for {number_of_buildings} buildings in {len(estate_ids)} estates"
+        )
+        for estate_id, building_ids in estate_building_ids.items():
+            if estate_id not in estate_ids:  # Skip if already processed
+                continue
+            for building_id in building_ids:
+                try:
+                    raw_data = self._fetch_transaction_history_given_building_id(building_id)
+                    if raw_data:
+                        self.crawler_processor.process_single_building(raw_data)
+                except Exception as e:
+                    housing_logger.warning(f"Failed to fetch transactions for building {building_id}: {e}")
+                building_count += 1
+                # Save progress every 100 buildings or at the end
+                if building_count % 100 == 0 or (estate_id == estate_ids[-1] and building_id == building_ids[-1]):
+                    self.crawler_processor.update_tables()
+                    housing_logger.info(f"Processed {building_count} buildings so far")
+                time.sleep(0.25)
+        housing_logger.info(f"Fetched transactions for {building_count} buildings")
+
+    def _legacy_fetch_all_building_transactions(self) -> None:
         """
         Fetch transactions for all building IDs listed in building_ids.json
         """

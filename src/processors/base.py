@@ -168,6 +168,43 @@ class BaseProcessor:
         self.conn.unregister("temp_df")
         housing_logger.info(f"DataFrame saved to table '{table_name}' in database.")
 
+    def _check_and_convert_types_by_schema(self, data: dict, schema: dict) -> dict:
+        """
+        Check and convert the types of the data dictionary based on the provided schema.
+
+        Parameters:
+            data (dict): The data dictionary to check and convert.
+            schema (dict): The schema dictionary defining expected types.
+        Returns:
+            dict: The data dictionary with converted types.
+        """
+        for k, v in data.items():
+            if k not in schema:
+                data.pop(k, None)
+                continue
+            expected_type = schema[k]
+            if expected_type == "REAL":
+                try:
+                    data[k] = float(v)
+                except (ValueError, TypeError):
+                    housing_logger.warning(f"Failed to convert {k} value '{v}' to float.")
+                    data[k] = None                    
+            elif expected_type == "INTEGER":
+                try:
+                    data[k] = int(v)
+                except (ValueError, TypeError):
+                    housing_logger.warning(f"Failed to convert {k} value '{v}' to int.")
+                    data[k] = None
+            elif expected_type == "TEXT":
+                data[k] = str(v) if v is not None else None
+            else:
+                housing_logger.warning(f"""
+                                       Unknown expected type '{expected_type}' for key '{k}'.
+                                       Add conversion logic in _check_and_convert_types method.
+                                       """)
+                data[k] = None
+        return data
+
     def execute_query(self, query: str):
         """
         Execute a SQL query on the connected database.
