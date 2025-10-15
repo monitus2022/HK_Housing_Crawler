@@ -1,3 +1,4 @@
+from http import cookies
 import requests
 from bs4 import BeautifulSoup
 import pandas as pd
@@ -26,15 +27,21 @@ class AgencyCrawler(BaseCrawler):
         
         # Init session to persist headers and cookies
         self.session = requests.Session()
+         
         self.session.headers.update(self.headers)
+
+        with open("src/crawlers/agency_cookies.json", "r", encoding="utf-8") as f:
+            cookies = json.load(f)
+        cookies["token"] = housing_crawler_config.agency_api.cookies_token
+        self.session.cookies.update(cookies)
         self._set_file_paths()
         self._set_request_urls()
 
     def _set_file_paths(self):
-        self.estate_info_file_path = housing_crawler_config.file_paths.agency.estate_info_json
-        self.estate_id_file_path = housing_crawler_config.file_paths.agency.estate_id_json
-        self.building_id_file_path = housing_crawler_config.file_paths.agency.building_id_json
-        self.transactions_file_path = housing_crawler_config.file_paths.agency.transactions_json
+        self.estate_info_file_path = self.files_path / housing_crawler_config.storage.files.outputs.estate_info_json
+        self.estate_id_file_path = self.files_path / housing_crawler_config.storage.files.outputs.estate_id_json
+        self.building_id_file_path = self.files_path / housing_crawler_config.storage.files.outputs.building_id_json
+        self.transactions_file_path = self.files_path / housing_crawler_config.storage.files.outputs.transactions_json
 
     def _set_request_urls(self):
         self.estate_info_url = housing_crawler_config.agency_api.urls.estate_info
@@ -197,9 +204,11 @@ class AgencyCrawler(BaseCrawler):
 
         with open(self.estate_info_file_path, "w", encoding="utf-8") as f:
             json.dump(all_estates, f, ensure_ascii=False, indent=4)
+            housing_logger.info(f"Saved estate info to {self.estate_info_file_path}")
 
         with open(self.estate_id_file_path, "w", encoding="utf-8") as f:
             json.dump(estate_ids, f, ensure_ascii=False, indent=4)
+            housing_logger.info(f"Saved estate IDs to {self.estate_id_file_path}")
 
     def _legacy_fetch_transaction_data_given_building_id(self, building_id):
         """
