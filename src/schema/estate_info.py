@@ -11,7 +11,7 @@ ESTATE_INFO_SCHEMA = {
     "sm_district_name": "TEXT",
     "location_lat": "REAL",
     "location_lon": "REAL",
-    "first_op_date": "DATE",
+    "first_op_date": "DATETIME",
     "sell_count": "INTEGER",
     "rent_count": "INTEGER",
     "yearly_tx_count": "INTEGER",

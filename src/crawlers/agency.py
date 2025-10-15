@@ -6,18 +6,15 @@ import time
 import json
 from config import housing_crawler_config
 from logger import housing_logger
-import pathlib
+from pathlib import Path
 from typing import Optional
+from .base import BaseCrawler
 
-# TODO: Type safe with pydantic
 
-
-class AgencyCrawler:
+class AgencyCrawler(BaseCrawler):
     def __init__(self):
-        self.headers = housing_crawler_config.headers.agency.model_dump()
-        # Ensure data directory exists
-        data_dir = pathlib.Path("data")
-        data_dir.mkdir(parents=True, exist_ok=True)
+        super().__init__()
+        self.headers = dict(housing_crawler_config.agency_api.headers)
         
         # Init session to persist headers and cookies
         self.session = requests.Session()
@@ -28,14 +25,6 @@ class AgencyCrawler:
         self.building_id_file_path = housing_crawler_config.file_paths.agency.building_id_json
         self.transactions_file_path = housing_crawler_config.file_paths.agency.transactions_json
 
-    def _make_request(self, url: str, params: dict = None) -> Optional[requests.Response]:
-        try:
-            response = self.session.get(url, params=params)
-            response.raise_for_status()
-            return response
-        except requests.RequestException as e:
-            housing_logger.error(f"Error making request to {url}: {str(e)}")
-            return None
 
     def fetch_all_transaction_history(self):
         """
