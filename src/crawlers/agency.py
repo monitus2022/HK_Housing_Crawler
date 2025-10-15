@@ -6,6 +6,7 @@ from logger import housing_logger
 from typing import Optional
 from .base import BaseCrawler
 from processors import CrawlerProcessor
+from utils import cookie_str_to_dict
 from .request_params import FETCH_ESTATE_INFO_PARAMS, SIMPLE_FETCH_PARAMS, FETCH_ESTATE_MARKET_INFO_PARAMS
 
 
@@ -28,10 +29,8 @@ class AgencyCrawler(BaseCrawler):
 
         # Load cookies from file and update with token from config
         # TODO: Use selenium to get fresh cookies
-        with open("src/crawlers/agency_cookies.json", "r", encoding="utf-8") as f:
-            cookies = json.load(f)
-        cookies["token"] = housing_crawler_config.agency_api.cookies_token
-        self.session.cookies.update(cookies)
+        self.cookie_token = housing_crawler_config.agency_api.cookies_token
+        self.session.cookies.update(cookie_str_to_dict(self.cookie_token))
         self._set_file_paths()
         self._set_request_urls()
         self.crawler_processor = CrawlerProcessor()
@@ -40,7 +39,6 @@ class AgencyCrawler(BaseCrawler):
         self.estate_info_file_path = self.files_path / housing_crawler_config.storage.files.outputs.estate_info_json
         self.estate_id_file_path = self.files_path / housing_crawler_config.storage.files.outputs.estate_id_json
         self.building_id_file_path = self.files_path / housing_crawler_config.storage.files.outputs.building_id_json
-        self.transactions_file_path = self.files_path / housing_crawler_config.storage.files.outputs.transactions_json
 
     def _set_request_urls(self) -> None:
         self.all_estate_info_url = housing_crawler_config.agency_api.urls.all_estate_info
@@ -55,7 +53,7 @@ class AgencyCrawler(BaseCrawler):
         housing_logger.info("Starting to fetch all transactions for all buildings")
         # Load building IDs from file
         with open(self.building_id_file_path, "r", encoding="utf-8") as f:
-            estate_building_ids = json.load(f)
+            estate_building_ids: dict[str, list[str]] = json.load(f)
         estate_ids = list(estate_building_ids.keys())
         number_of_buildings = sum(len(bids) for bids in estate_building_ids.values())
         housing_logger.info(f"Total {number_of_buildings} buildings in {len(estate_ids)} estates to fetch transactions for")
@@ -75,8 +73,6 @@ class AgencyCrawler(BaseCrawler):
             f"Starting to fetch transaction for {number_of_buildings} buildings in {len(estate_ids)} estates"
         )
         for estate_id, building_ids in estate_building_ids.items():
-            if estate_id not in estate_ids:  # Skip if already processed
-                continue
             for building_id in building_ids:
                 try:
                     raw_data = self._fetch_transaction_history_given_building_id(building_id)
@@ -91,54 +87,6 @@ class AgencyCrawler(BaseCrawler):
                     housing_logger.info(f"Processed {building_count} buildings so far")
                 time.sleep(0.25)
         housing_logger.info(f"Fetched transactions for {building_count} buildings")
-
-    def _legacy_fetch_all_building_transactions(self) -> None:
-        """
-        Fetch transactions for all building IDs listed in building_ids.json
-        """
-        housing_logger.info("Starting to fetch all transactions for all buildings")
-        with open(self.building_id_file_path, "r", encoding="utf-8") as f:
-            estate_building_ids = json.load(f)
-        estate_ids = list(estate_building_ids.keys())
-        number_of_buildings = sum(len(bids) for bids in estate_building_ids.values())
-        housing_logger.info(f"Total {number_of_buildings} buildings in {len(estate_ids)} estates to fetch transactions for")
-        all_transactions = {}
-
-        # Check if existing transactions file exists to avoid duplicates
-        output_path = self.transactions_file_path
-        try:
-            with open(output_path, "r", encoding="utf-8") as f:
-                all_transactions = json.load(f)
-                existing_estate_ids = {list(item.keys())[0] for item in all_transactions}
-                housing_logger.info(
-                    f"Loaded existing transaction data for {len(existing_estate_ids)} estates from {self.transactions_file_path}"
-                )
-                # Remove already loaded estate IDs from the list to fetch
-                estate_ids = [eid for eid in estate_ids if eid not in existing_estate_ids]
-        except FileNotFoundError:
-            housing_logger.info(f"No existing transaction data found at {output_path}, starting fresh.")
-
-        # Fetch transactions for each building ID
-        housing_logger.info(
-            f"Starting to fetch transaction for {len(estate_ids)} estates"
-        )
-        batched_transactions = {}
-        building_id_count = 0
-        for idx, (estate_id, building_ids) in enumerate(estate_building_ids.items()):
-            batched_transactions.update(estate_transaction_data)
-            estate_transaction_data = self._fetch_and_process_transactions_for_estate(estate_id, building_ids)
-            building_id_count += len(building_ids)
-            # Save progress every 100 estates and at the end
-            if idx != 0 and (idx + 1) % 100 == 0 or idx == len(estate_ids) - 1:
-                all_transactions.update(batched_transactions)
-                with open(output_path, "w", encoding="utf-8") as out_f:
-                    json.dump(all_transactions, out_f, ensure_ascii=False, indent=2)
-                batched_transactions = {}
-                housing_logger.info(
-                    f"Fetched transactions for {idx + 1}/{len(estate_ids)} estates, {building_id_count} buildings so far"
-                )
-            time.sleep(0.25)
-        housing_logger.info(f"Fetched transactions for all {len(estate_ids)} estates")
 
     def _fetch_and_process_transactions_for_estate(self, estate_id: str, building_ids: list[str]) -> dict:
         """

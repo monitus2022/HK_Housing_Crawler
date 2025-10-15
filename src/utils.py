@@ -1,4 +1,4 @@
-from typing import Union, Callable
+from typing import Union, Callable, List, Dict
 from logger import housing_logger
 import re
 import pandas as pd
@@ -33,10 +33,10 @@ def flatten_dict(
     for k, v in d.items():
         if should_exclude(k):
             continue
-        elif isinstance(v, list):
+        elif isinstance(v, list) or isinstance(v, List):
             housing_logger.error(f"List found in flatten_dict for key {k}. Skipping.")
             raise ValueError("List found in flatten_dict, which is not supported.")
-        elif not isinstance(v, dict):
+        elif not isinstance(v, dict) or not isinstance(v, Dict):
             final_key = f"{primary_key}{sep}{k}"
             items.update({final_key: v})
         else:
@@ -66,3 +66,16 @@ def convert_datetime(cell) -> any:
         except ValueError:
             return pd.NA
     return cell
+
+def cookie_str_to_dict(cookie_str: str) -> dict[str, str]:
+    """
+    Convert a cookie string to a dictionary.
+    Example input: "key1=value1; key2=value2; key3=value3"
+    Example output: {"key1": "value1", "key2": "value2", "key3": "value3"}
+    """
+    cookies = {}
+    for item in cookie_str.split(";"):
+        if "=" in item:
+            key, value = item.split("=", 1)
+            cookies[key.strip()] = value.strip()
+    return cookies

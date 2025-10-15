@@ -24,7 +24,7 @@ agency_api:
     sec_fetch_user: "?1"
     upgrade_insecure_requests: "1"
     user_agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36"
-  # Token: Set this to your actual token value
+  # Token: Set this to your actual token value obtained from -b in curl
   cookies_token: ""
 
 # Data storage settings

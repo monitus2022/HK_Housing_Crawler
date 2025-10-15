@@ -83,9 +83,11 @@ class CrawlerProcessor(BaseProcessor):
         """
         if not data:
             return None
-        # Process building info
+        # Process building info without data
+        housing_logger.info(f"Processing building {data["building"].get('id')} - {data["building"].get('name')}")
+    
         building_info = flatten_dict(
-            data, primary_key="building", sep="_", key_exclude=["bldg_type"]
+            data.get("building", {}), primary_key="building", sep="_", key_exclude=["bldg_type"]
         )
         building_info = self._check_and_convert_types_by_schema(
             building_info, BUILDING_INFO_TABLE_SCHEMA
@@ -97,6 +99,7 @@ class CrawlerProcessor(BaseProcessor):
             self._process_single_unit(
                 data["building_id"], data["building_name"], unit
             )
+        housing_logger.info(f"Finished processing building {data.get('building_id')} - {data.get('building_name')}")
 
     def _process_single_unit(self, building_id: str, building_name: str, data: dict) -> None:
         """
