@@ -53,19 +53,20 @@ class BaseProcessor:
             self.conn = None
             housing_logger.info("Database connection closed.")
 
-    def save_dataframe_to_db(self, df, db_type: str = "duckdb", **kwargs) -> None:
+    def save_dataframe_to_db(self, df, db_type: str = "duckdb", dtypes: dict = None, **kwargs) -> None:
         """
         Save a pandas DataFrame to the specified database type.
 
         Parameters:
             df (pd.DataFrame): The DataFrame to save.
             db_type (str): The type of database to save to. Options are 'duckdb' or 'sqlite'.
+            dtypes (dict): Optional dictionary specifying column data types.
             **kwargs: Additional keyword arguments for the specific save function.
         """
         if db_type == "sqlite":
-            self._save_dataframe_to_sqlite(df, **kwargs)
+            self._save_dataframe_to_sqlite(df, dtypes=dtypes, **kwargs)
         elif db_type == "duckdb":
-            self._save_dataframe_to_duckdb(df, **kwargs)
+            self._save_dataframe_to_duckdb(df, dtypes=dtypes, **kwargs)
         else:
             housing_logger.error(f"Unsupported database type: {db_type}")
             raise ValueError(f"Unsupported database type: {db_type}")
@@ -166,3 +167,23 @@ class BaseProcessor:
         self.conn.execute(generate_create_table_query(table_name, dtypes))
         self.conn.unregister("temp_df")
         housing_logger.info(f"DataFrame saved to table '{table_name}' in database.")
+
+    def execute_query(self, query: str):
+        """
+        Execute a SQL query on the connected database.
+
+        Parameters:
+            query (str): The SQL query to execute.
+
+        Returns:
+            The result of the query execution.
+        """
+        if self.conn is None:
+            housing_logger.error("Database connection is not established.")
+            return None
+        try:
+            result = self.conn.execute(query).fetchall()
+            return result
+        except Exception as e:
+            housing_logger.error(f"Failed to execute query: {e}")
+            return None

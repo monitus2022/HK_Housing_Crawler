@@ -36,12 +36,11 @@ class Databases(BaseModel):
     table_names: DatabaseTableNames
 
 class FilesOutputs(BaseModel):
-    transactions_json: str
+    transactions_db: str
     estate_info_json: str
     estate_id_json: str
     building_id_json: str
     building_info_json: str
-    unit_transactions_json: str
     legacy_transaction_csv: str
 
 class Files(BaseModel):

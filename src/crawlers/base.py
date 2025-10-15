@@ -37,7 +37,7 @@ class BaseCrawler(ABC):
             except requests.RequestException as e:
                 retry_count += 1
                 housing_logger.error(f"Request exception for URL: {url} with params: {params}. Error: {e}. Retry {retry_count}/{retry}")
-                time.sleep(2)  # Wait for 2 seconds before retrying
+                time.sleep(2)
                 continue
             return response
         housing_logger.error(f"Failed to fetch URL: {url} with params: {params} after {retry} retries.")
