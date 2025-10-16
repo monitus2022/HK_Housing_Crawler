@@ -178,10 +178,13 @@ class BaseProcessor:
         Returns:
             dict: The data dictionary with converted types.
         """
+        if type(data) is not dict:
+            raise TypeError("Only dict is accepted while matching schema")
+        # Remove items not included in schema
+        data = {k: v for k, v in data.items() if k in schema}
+
+        # Type conversion according to schema
         for k, v in data.items():
-            if k not in schema:
-                data.pop(k, None)
-                continue
             expected_type = schema[k]
             if expected_type == "REAL":
                 try:

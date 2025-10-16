@@ -75,31 +75,37 @@ class CrawlerProcessor(BaseProcessor):
         # Clear cache after updating database
         self.set_data_cache()  
 
-    def process_single_building(self, data: dict) -> None:
+    def process_single_building(self, data: dict[str, dict | list]) -> None:
         """
+        Input:
+            building: contains building info
+            data: unit info and list of transactions
+
         Given building transaction data, split and insert into 2 data:
         1. Building Info
         2. Unit data (which will be further split)
+        Refer to schema/examples/transactions.json for example body
         """
         if not data:
             return None
         # Process building info without data
-        housing_logger.info(f"Processing building {data["building"].get('id')} - {data["building"].get('name')}")
-    
         building_info = flatten_dict(
             data.get("building", {}), primary_key="building", sep="_", key_exclude=["bldg_type"]
         )
         building_info = self._check_and_convert_types_by_schema(
             building_info, BUILDING_INFO_TABLE_SCHEMA
         )
+        building_id = building_info.get('building_id')
+        building_name = building_info.get('building_name')
         self.data_cache[self.building_info_table].append(building_info)
 
         # Process each unit in the building
-        for unit in data.get("data", []):
+        units = data.get("data", [])
+        for unit in units:
             self._process_single_unit(
-                data["building_id"], data["building_name"], unit
+                building_id, building_name, unit
             )
-        housing_logger.info(f"Finished processing building {data.get('building_id')} - {data.get('building_name')}")
+        # housing_logger.info(f"Finished processing building {building_id} - {building_name}")
 
     def _process_single_unit(self, building_id: str, building_name: str, data: dict) -> None:
         """
@@ -114,33 +120,41 @@ class CrawlerProcessor(BaseProcessor):
         # Add additional fields for unit info
         data["building_id"] = building_id
         data["building_name"] = building_name
-        # Get extra unit info fields from the first transaction
-        transaction_extra_info = {
-            k: v
-            for k, v in data.get("transactions", [{}])[0].items()
-            if k in UNIT_INFO_TABLE_SCHEMA
-        }
-        data.update(transaction_extra_info)
+        unit_id = data.get("unit_id")
 
+        # Get extra unit info fields from the first transaction, if any
+        transactions = data.get("transactions", [])
+        if transactions:
+            first_transaction = transactions[0]
+            transaction_extra_info = {
+                k: v
+                for k, v in first_transaction.items()
+                if k in UNIT_INFO_TABLE_SCHEMA
+            }
+            data.update(transaction_extra_info)
+
+            # Get feature list
+            unit_features_list = first_transaction.get("feature", [])
+            if unit_features_list is not None:
+                for feature in unit_features_list:
+                    feature["unit_id"] = unit_id
+                    feature = self._check_and_convert_types_by_schema(
+                        feature, UNIT_FEATURES_TABLE_SCHEMA
+            )
+                # Save Unit Feature to cache
+                self.data_cache[self.unit_features_table].extend(unit_features_list)
+
+            # Process transactions for the unit
+            self._process_single_unit_transactions(
+                unit_id, data.get("transactions", [])
+            )
+
+        # Check unit info and save to cache
         unit_info = self._check_and_convert_types_by_schema(
             data, UNIT_INFO_TABLE_SCHEMA
         )
         self.data_cache[self.unit_info_table].append(unit_info)
 
-        # Process unit features
-        unit_features_list = data.get("features", [])
-        if unit_features_list:
-            for feature in unit_features_list:
-                feature["unit_id"] = data["unit_id"]
-            unit_features = self._check_and_convert_types_by_schema(
-                unit_features_list, UNIT_FEATURES_TABLE_SCHEMA
-            )
-            self.data_cache[self.unit_features_table].extend(unit_features)
-
-        # Process transactions for the unit
-        self._process_single_unit_transactions(
-            data["unit_id"], data.get("transactions", [])
-        )
 
     def _process_single_unit_transactions(self, unit_id: str, data: list[dict]) -> None:
         """
@@ -150,11 +164,11 @@ class CrawlerProcessor(BaseProcessor):
             return None
         for tx in data:
             # Rename id to transaction_id
-            tx["transaction_id"] = tx.pop("id", None)
-            tx = self._check_and_convert_types_by_schema(tx, TRANSACTIONS_TABLE_SCHEMA)
-
+            tx["transaction_id"] = tx.get("id", "")
             tx["unit_id"] = unit_id
+            tx = self._check_and_convert_types_by_schema(tx, TRANSACTIONS_TABLE_SCHEMA)
             self.data_cache[self.transactions_table].append(tx)
+
 
     def get_existing_estate_ids(self) -> set:
         """

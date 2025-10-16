@@ -3,7 +3,7 @@ import time
 import json
 from config import housing_crawler_config
 from logger import housing_logger
-from typing import Optional
+from typing import Optional, Union
 from .base import BaseCrawler
 from processors import CrawlerProcessor
 from utils import cookie_str_to_dict
@@ -67,7 +67,8 @@ class AgencyCrawler(BaseCrawler):
         except Exception as e:
             housing_logger.info("No existing estates found in the database, starting fresh.")
             existing_estate_ids = set()
-            
+        
+        # Fetch and process transaction data of buildings from each estate
         building_count = 0
         housing_logger.info(
             f"Starting to fetch transaction for {number_of_buildings} buildings in {len(estate_ids)} estates"
@@ -76,54 +77,23 @@ class AgencyCrawler(BaseCrawler):
             for building_id in building_ids:
                 try:
                     raw_data = self._fetch_transaction_history_given_building_id(building_id)
-                    if raw_data:
-                        self.crawler_processor.process_single_building(raw_data)
                 except Exception as e:
-                    housing_logger.warning(f"Failed to fetch transactions for building {building_id}: {e}")
+                    housing_logger.error(f"Failed to fetch transactions for building {building_id}: {e}")
+                    break
+                try:
+                    self.crawler_processor.process_single_building(raw_data)
+                except Exception as e:
+                    housing_logger.error(f"Failed to process building {building_id}: {e}")
+                    continue
                 building_count += 1
                 # Save progress every 100 buildings or at the end
-                if building_count % 100 == 0 or (estate_id == estate_ids[-1] and building_id == building_ids[-1]):
+                if building_count % 100 == 0:
                     self.crawler_processor.update_tables()
                     housing_logger.info(f"Processed {building_count} buildings so far")
                 time.sleep(0.25)
+        # Final flush to db
+        self.crawler_processor.update_tables()
         housing_logger.info(f"Fetched transactions for {building_count} buildings")
-
-    def _fetch_and_process_transactions_for_estate(self, estate_id: str, building_ids: list[str]) -> dict:
-        """
-        Fetch and process transactions for all buildings in a given estate
-        """
-        estate_transaction_data = {estate_id: {}}
-        for building_id in building_ids:
-            raw_data = self._fetch_transaction_history_given_building_id(building_id)
-            if not raw_data:
-                continue
-            cleaned_data = self._clean_single_building_transaction_data(raw_data.get("data", []))
-            if cleaned_data:
-                estate_transaction_data[estate_id][building_id] = cleaned_data
-        return estate_transaction_data
-
-    @staticmethod
-    def _clean_single_building_transaction_data(data: list[dict]) -> list[dict]:
-        """
-        Remove unnecessary fields from a single building transaction data to reduce storage size
-        Further processing can be done in the processor class
-        Args:
-            data (list): Raw transaction data from 'data' field for a single building
-        """
-        for flat_unit in data:
-            flat_unit.pop("unit_id", None)
-            flat_unit.pop("unit_type", None)
-            if not flat_unit["transactions"]:
-                continue
-            flat_unit["transactions"] = [
-                {
-                    k: v
-                    for k, v in tx.items()
-                    if k not in ["tx_type", "mkt_type", "url_desc", "area", "net_area"]
-                }
-                for tx in flat_unit.get("transactions", [])
-            ]
-        return data
 
     def _fetch_transaction_history_given_building_id(
             self, building_id: str) -> Optional[dict[str, list|dict]]:
@@ -134,7 +104,7 @@ class AgencyCrawler(BaseCrawler):
         params = SIMPLE_FETCH_PARAMS.copy()
         response = self._make_request(base_url, params=params)
         if not response:
-            return None
+            housing_logger.error(f"Failed to fetch transactions for building id: {building_id}")
         data = response.json()
         return data
 
