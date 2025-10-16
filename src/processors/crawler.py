@@ -59,6 +59,7 @@ class CrawlerProcessor(BaseProcessor):
             if data:
                 # Convert cache data to DataFrame
                 data = pd.DataFrame(data)
+                housing_logger.debug(data.head(3))
                 # Insert data into the database
                 self.save_dataframe_to_db(
                     data,
@@ -102,9 +103,8 @@ class CrawlerProcessor(BaseProcessor):
         # Process each unit in the building
         units = data.get("data", [])
         for unit in units:
-            self._process_single_unit(
-                building_id, building_name, unit
-            )
+            self._process_single_unit(building_id, building_name, unit)
+
         # housing_logger.info(f"Finished processing building {building_id} - {building_name}")
 
     def _process_single_unit(self, building_id: str, building_name: str, data: dict) -> None:
@@ -136,7 +136,12 @@ class CrawlerProcessor(BaseProcessor):
             # Get feature list
             unit_features_list = first_transaction.get("feature", [])
             if unit_features_list is not None:
+                unit_features_list = [
+                    {f"feature_{k}": v for k, v in feature.items()}
+                    for feature in unit_features_list
+                ]
                 for feature in unit_features_list:
+                    # Adding prefix
                     feature["unit_id"] = unit_id
                     feature = self._check_and_convert_types_by_schema(
                         feature, UNIT_FEATURES_TABLE_SCHEMA
