@@ -8,6 +8,7 @@ from schema.transactions import (
     UNIT_INFO_TABLE_SCHEMA,
     UNIT_FEATURES_TABLE_SCHEMA,
     TRANSACTIONS_TABLE_SCHEMA,
+    ESTATE_MONTHLY_MARKET_SCHEMA
 )
 
 
@@ -34,6 +35,7 @@ class CrawlerProcessor(BaseProcessor):
         self.unit_info_table = "unit_info"
         self.unit_features_table = "unit_features"
         self.transactions_table = "transactions"
+        self.estate_monthly_market_table = "estate_monthly_market"
 
     def set_table_schemas(self) -> None:
         self.table_schemas = {
@@ -41,6 +43,7 @@ class CrawlerProcessor(BaseProcessor):
             self.unit_info_table: UNIT_INFO_TABLE_SCHEMA,
             self.unit_features_table: UNIT_FEATURES_TABLE_SCHEMA,
             self.transactions_table: TRANSACTIONS_TABLE_SCHEMA,
+            self.estate_monthly_market_table: ESTATE_MONTHLY_MARKET_SCHEMA,
         }
 
     def set_data_cache(self) -> None:
@@ -49,17 +52,31 @@ class CrawlerProcessor(BaseProcessor):
             self.unit_info_table: [],
             self.unit_features_table: [],
             self.transactions_table: [],
+            self.estate_monthly_market_table: [],
         }
 
     def get_data_cache(self) -> dict:
         return self.data_cache
 
-    def update_tables(self) -> None:
-        for table_name, data in self.data_cache.items():
+    def update_tables(self, tables: str | list[str] = None) -> None:
+        """
+        Update specified tables in the database from the data cache.
+        If no tables specified, update all tables.
+        """
+        if tables is None:
+            tables = self.data_cache.keys()
+        elif isinstance(tables, str):
+            tables = [tables]
+        else:
+            tables = [table for table in tables if table in self.data_cache]
+
+        for table in tables:
+            table_name = table
+            data = self.data_cache.get(table_name, [])
             if data:
                 # Convert cache data to DataFrame
                 data = pd.DataFrame(data)
-                housing_logger.debug(data.head(3))
+                housing_logger.debug(data.head(1))
                 # Insert data into the database
                 self.save_dataframe_to_db(
                     data,

@@ -7,7 +7,7 @@ from typing import Optional, Union
 from .base import BaseCrawler
 from processors import CrawlerProcessor
 from utils import cookie_str_to_dict
-from .request_params import FETCH_ESTATE_INFO_PARAMS, SIMPLE_FETCH_PARAMS, FETCH_ESTATE_MARKET_INFO_PARAMS
+from .request_params import FETCH_ESTATE_INFO_PARAMS, SIMPLE_FETCH_PARAMS, FETCH_ESTATE_MONTHLY_MARKET_INFO_PARAMS
 
 
 class AgencyCrawler(BaseCrawler):
@@ -45,6 +45,64 @@ class AgencyCrawler(BaseCrawler):
         self.single_estate_info_url = housing_crawler_config.agency_api.urls.single_estate_info
         self.estate_market_info_url = housing_crawler_config.agency_api.urls.estate_market_info
         self.building_transactions_url = housing_crawler_config.agency_api.urls.building_transactions
+
+    def fetch_all_estate_monthly_market_info(self) -> None:
+        """
+        Fetch monthly market info for all estates
+        """
+        # Get all estate IDs from file
+        try:
+            with open(self.estate_id_file_path, "r", encoding="utf-8") as f:
+                estate_ids = json.load(f)
+        except FileNotFoundError:
+            housing_logger.error(f"Estate ID file not found at {self.estate_id_file_path}.")
+            return
+        
+        housing_logger.info(f"Starting to fetch monthly market info for {len(estate_ids)} estates")
+        for idx, estate_id in enumerate(estate_ids):
+            data = self._fetch_estate_market_info_given_estate_id(estate_id)
+            if not data:
+                continue
+            self.crawler_processor.data_cache[self.crawler_processor.estate_monthly_market_table].extend(data)
+            # Save progress every 100 estates or at the end
+            if (idx + 1) % 100 == 0 or idx == len(estate_ids) - 1:
+                self.crawler_processor.update_tables(tables=self.crawler_processor.estate_monthly_market_table)
+                housing_logger.info(f"Processed market info for {idx+1}/{len(estate_ids)} estates so far")
+            time.sleep(0.25)
+
+    def _fetch_estate_market_info_given_estate_id(self, estate_id: str) -> Optional[list[dict[str: any]]]:
+        """
+        Fetch market info for a given estate ID (e.g. E00024)
+        """
+        base_url = self.estate_market_info_url
+        params = FETCH_ESTATE_MONTHLY_MARKET_INFO_PARAMS.copy()
+
+        # Add param depends on estate or phase type
+        if estate_id.startswith("E"):
+            params["type"] = "estate"
+        elif estate_id.startswith("P"):
+            params["type"] = "phase"
+        params["est_ids"] = estate_id
+
+        response = self._make_request(base_url, params=params)
+        if not response:
+            return None
+        data: list = response.json()
+        data = data[0] if data else {}
+
+        # Only keep list of monthly market info
+        if not data or "monthly" not in data:
+            housing_logger.warning(f"No monthly market info found for estate id: {estate_id}")
+            return None
+        monthly_data = data.get("monthly", [])
+        if not monthly_data:
+            housing_logger.warning(f"No monthly market info found for estate id: {estate_id}")
+            return None
+        
+        for month in monthly_data:
+            month["estate_id"] = estate_id  # Add estate_id for reference
+        return monthly_data
+
 
     def fetch_all_building_transactions(self) -> None:
         """
@@ -177,20 +235,6 @@ class AgencyCrawler(BaseCrawler):
             )
         # TODO: Currently using building ids for transaction history fetch only
         return {"estate_info": None}, {estate_id: building_ids}
-
-    def _fetch_estate_market_info_given_estate_id(self, estate_id: str) -> Optional[dict]:
-        """
-        Fetch market info for a given estate ID (e.g. E00024)
-        """
-        base_url = self.estate_market_info_url
-        params = FETCH_ESTATE_MARKET_INFO_PARAMS.copy()
-        params["id"] = estate_id
-
-        response = self._make_request(base_url, params=params)
-        if not response:
-            return None
-        data = response.json()
-        return data
 
     def fetch_estate_id_and_info(self) -> None:
         """

@@ -15,6 +15,13 @@ FETCH_ESTATE_MARKET_INFO_PARAMS = {
             "id": None,  # to be filled in dynamically
         }
 
+FETCH_ESTATE_MONTHLY_MARKET_INFO_PARAMS = {
+            "type": "estate",
+            "lang": "en",
+            "monthly": "true",
+            "est_ids": None,  # to be filled in dynamically
+        }
+
 SIMPLE_FETCH_PARAMS = {
     "lang": "en"
 }
