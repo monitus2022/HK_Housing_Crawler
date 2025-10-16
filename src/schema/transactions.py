@@ -10,8 +10,7 @@ BUILDING_INFO_TABLE_SCHEMA = {
     "building_id": "TEXT",
     "building_name": "TEXT",
     "phase_id": "TEXT",
-    "phase_name": "TEXT",
-    "unit_count": "INTEGER",
+    "phase_name": "TEXT"
 }
 
 UNIT_INFO_TABLE_SCHEMA = {

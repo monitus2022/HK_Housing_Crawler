@@ -62,8 +62,9 @@ class AgencyCrawler(BaseCrawler):
         try:
             existing_estate_ids = self.crawler_processor.get_existing_estate_ids()
             # Remove already loaded estate IDs from the list to fetch
-            estate_ids = [eid for eid in estate_ids if eid not in existing_estate_ids]
-            housing_logger.info(f"Skipping {len(existing_estate_ids)} existing estates already in the database")
+            if existing_estate_ids:
+                housing_logger.info(f"Skipping {len(existing_estate_ids)} existing estates already in the database")
+                estate_ids = [eid for eid in estate_ids if eid not in existing_estate_ids]
         except Exception as e:
             housing_logger.info("No existing estates found in the database, starting fresh.")
             existing_estate_ids = set()
@@ -94,6 +95,9 @@ class AgencyCrawler(BaseCrawler):
         # Final flush to db
         self.crawler_processor.update_tables()
         housing_logger.info(f"Fetched transactions for {building_count} buildings")
+
+        # Close db connection
+        self.crawler_processor.close_db()
 
     def _fetch_transaction_history_given_building_id(
             self, building_id: str) -> Optional[dict[str, list|dict]]:

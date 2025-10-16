@@ -168,7 +168,7 @@ class BaseProcessor:
         self.conn.unregister("temp_df")
         housing_logger.info(f"DataFrame saved to table '{table_name}' in database.")
 
-    def _check_and_convert_types_by_schema(self, data: dict, schema: dict) -> Optional[dict]:
+    def _check_and_convert_types_by_schema(self, data: dict[str, any], schema: dict[str, str]) -> Optional[dict]:
         """
         Check and convert the types of the data dictionary based on the provided schema.
 
@@ -180,12 +180,6 @@ class BaseProcessor:
         """
         if type(data) is not dict:
             raise TypeError("Only dict is accepted while matching schema")
-        
-        # Check if all items required in schema is included in data
-        for schema_key in schema.keys():
-            if schema_key not in data:
-                housing_logger.error("Missing keys while matching schema")
-                raise ValueError("Data and schema mismatched")
         
         # Remove items not included in schema
         data = {k: v for k, v in data.items() if k in schema}
