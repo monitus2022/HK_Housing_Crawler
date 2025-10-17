@@ -11,12 +11,21 @@ from typing import Union
 class AgencyProcessor(BaseProcessor):
     def __init__(self):
         super().__init__()
-        self.transaction_file_path = self.data_storage_path / housing_crawler_config.transactions_json
-        self.estate_info_json_path = self.data_storage_path / housing_crawler_config.estate_info_json
-        self.building_info_json_path = self.data_storage_path / housing_crawler_config.building_info_json
-        self.unit_transactions_json_path = self.data_storage_path / housing_crawler_config.unit_transactions_json
-        self._legacy_transaction_file_path = self.data_storage_path / housing_crawler_config.legacy_transaction_csv
-
+        self.transaction_file_path = (
+            self.data_storage_path / housing_crawler_config.transactions_json
+        )
+        self.estate_info_json_path = (
+            self.data_storage_path / housing_crawler_config.estate_info_json
+        )
+        self.building_info_json_path = (
+            self.data_storage_path / housing_crawler_config.building_info_json
+        )
+        self.unit_transactions_json_path = (
+            self.data_storage_path / housing_crawler_config.unit_transactions_json
+        )
+        self._legacy_transaction_file_path = (
+            self.data_storage_path / housing_crawler_config.legacy_transaction_csv
+        )
 
     def process_transaction_json(self) -> None:
         with open(self.transaction_file_path, "r", encoding="utf-8") as file:
@@ -39,7 +48,9 @@ class AgencyProcessor(BaseProcessor):
         ) as file:
             json.dump(unit_transactions, file, ensure_ascii=False, indent=2)
 
-    def _process_single_building(self, transaction: dict) -> dict[str, Union[dict, list]]:
+    def _process_single_building(
+        self, transaction: dict
+    ) -> dict[str, Union[dict, list]]:
         """
         Split building transaction data into 2 subset with building_id as future foreign key
         For original transaction data structure, please refer to transaction.json in examples
@@ -83,12 +94,11 @@ class AgencyProcessor(BaseProcessor):
         if not isinstance(transactions, list):
             housing_logger.error("Transactions is not a list.")
             raise ValueError("Transactions is not a list.")
-        
+
         output = []
 
         unit_info = {
-            k: v for k, v in unit_data.items() 
-            if k not in ["unit_type", "transactions"]
+            k: v for k, v in unit_data.items() if k not in ["unit_type", "transactions"]
         }
         unit_info.update({"building_id": building_id})
         if transactions is None:
@@ -109,7 +119,14 @@ class AgencyProcessor(BaseProcessor):
         Process a single transaction record from single unit
         For list of features, break down to feature_1, feature_2, ...
         """
-        transaction_keys_exclude = ["id", "tx_type", "area", "net_area", "mkt_type", "url_desc"]
+        transaction_keys_exclude = [
+            "id",
+            "tx_type",
+            "area",
+            "net_area",
+            "mkt_type",
+            "url_desc",
+        ]
 
         output = {}
         for k, v in transaction.items():
@@ -139,15 +156,17 @@ class AgencyProcessor(BaseProcessor):
             json.dump(processed_data, file, ensure_ascii=False, indent=2)
 
         df = pd.DataFrame(processed_data)
-        
+
         # Save to db
         self.save_df_to_db(
             df=df,
             table_name=housing_crawler_config.estate_info_table_name,
             schema=ESTATE_INFO_SCHEMA,
-            db_type=db_type
+            db_type=db_type,
         )
-        housing_logger.info(f"Saved processed estate info to table: {housing_crawler_config.estate_info_table_name} in {db_type} database.")
+        housing_logger.info(
+            f"Saved processed estate info to table: {housing_crawler_config.estate_info_table_name} in {db_type} database."
+        )
 
     def _process_single_estate_info(self, info) -> dict:
         output_dict = {}

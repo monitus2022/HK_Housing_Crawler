@@ -13,7 +13,7 @@ with open(config_path, 'r', encoding='utf-8') as f:
 class AgencyUrls(BaseModel):
     all_estate_info: str
     single_estate_info: str
-    estate_market_info: str
+    estate_monthly_market_info: str
     building_transactions: str
     legacy_building_transactions: str
     legacy_building_ids: str
@@ -56,7 +56,9 @@ class Config(BaseSettings):
     agency_api: AgencyApi
     storage: Storage
 
-    model_config = SettingsConfigDict()
+    model_config = SettingsConfigDict(
+        extra="allow"
+    )
 
 housing_crawler_config = Config(**yaml_data)
 

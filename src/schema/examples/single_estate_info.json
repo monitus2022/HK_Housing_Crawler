@@ -1,6 +1,9 @@
 {
   "id": "E00061",
-  "name": { "chi": "美孚新邨", "en": "Mei Foo Sun Chuen" },
+  "name": {
+    "chi": "美孚新邨",
+    "en": "Mei Foo Sun Chuen"
+  },
   "is_phase": "false",
   "news_name": "美孚新邨",
   "sell_count": 130,
@@ -21,28 +24,70 @@
   "total_flats": "13,115 Units",
   "hos": "false",
   "bldg_type": "APARTMENT",
-  "region": { "id": "20", "name": "Kowloon" },
-  "subregion": { "id": "2006", "name": "Sham Shui Po" },
+  "region": {
+    "id": "20",
+    "name": "Kowloon"
+  },
+  "subregion": {
+    "id": "2006",
+    "name": "Sham Shui Po"
+  },
   "district": {
     "id": "200604",
     "name": "Mei Foo",
     "neighborhood_district": "false"
   },
   "sm_district": {
-    "top_estate": [{ "name": "Manhattan Hill" }, { "name": "Ching Lai Court" }]
+    "top_estate": [
+      {
+        "name": "Manhattan Hill"
+      },
+      {
+        "name": "Ching Lai Court"
+      }
+    ]
   },
-  "mtr_line": [{ "name": "Tsuen Wan Line" }, { "name": "Tuen Ma Line" }],
-  "mtr": [{ "name": "Mei Foo Station" }, { "name": "Lai Chi Kok Station" }],
+  "mtr_line": [
+    {
+      "name": "Tsuen Wan Line"
+    },
+    {
+      "name": "Tuen Ma Line"
+    }
+  ],
+  "mtr": [
+    {
+      "name": "Mei Foo Station"
+    },
+    {
+      "name": "Lai Chi Kok Station"
+    }
+  ],
   "address": "1 Broadway",
   "op_date": "1968-1978",
   "first_op_date": "1968-10-08T16:00:00.000Z",
   "last_op_date": "1978-05-15T16:00:00.000Z",
   "facilityGroup": [
-    { "id": "FM01", "name": "Kids' Facilities" },
-    { "id": "FM10", "name": "Sports Facilities" },
-    { "id": "FM07", "name": "Entertainment Facilities" },
-    { "id": "FM09", "name": "Catering Facilities" },
-    { "id": "FM05", "name": "Health & Beauty" }
+    {
+      "id": "FM01",
+      "name": "Kids' Facilities"
+    },
+    {
+      "id": "FM10",
+      "name": "Sports Facilities"
+    },
+    {
+      "id": "FM07",
+      "name": "Entertainment Facilities"
+    },
+    {
+      "id": "FM09",
+      "name": "Catering Facilities"
+    },
+    {
+      "id": "FM05",
+      "name": "Health & Beauty"
+    }
   ],
   "misc": [
     {
@@ -149,7 +194,9 @@
       "others": 71,
       "total": 18140
     },
-    "type_of_housing": { "median_floor_area_of_accommodation": 678 },
+    "type_of_housing": {
+      "median_floor_area_of_accommodation": 678
+    },
     "post_year": "2021"
   },
   "video": [
@@ -170,9 +217,17 @@
       "name": "Phase I No.1 Broadway 2/F-20/F",
       "wan_doc_path": "https://wm.hkp.com.hk/img_wm_revamp.php?wm=hkp&v=2022031706240308&src=http%3A%2F%2Fimg.midland.com.hk%2Ffloorplan_db%2Fbuilding%2F259%2FBB000001259_1.jpg",
       "source": "BUILDING",
-      "estate": { "id": "E00061" },
-      "phase": { "id": "P000000193", "name": "Phase I" },
-      "building": { "id": "B000001259", "name": "No.1 Broadway" },
+      "estate": {
+        "id": "E00061"
+      },
+      "phase": {
+        "id": "P000000193",
+        "name": "Phase I"
+      },
+      "building": {
+        "id": "B000001259",
+        "name": "No.1 Broadway"
+      },
       "floor_from": "2",
       "floor_to": "20",
       "floor_desc": "2/F-20/F"

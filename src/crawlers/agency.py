@@ -3,11 +3,16 @@ import time
 import json
 from config import housing_crawler_config
 from logger import housing_logger
-from typing import Optional, Union
+from typing import Optional
 from .base import BaseCrawler
 from processors import CrawlerProcessor
 from utils import cookie_str_to_dict
-from .request_params import FETCH_ESTATE_INFO_PARAMS, SIMPLE_FETCH_PARAMS, FETCH_ESTATE_MONTHLY_MARKET_INFO_PARAMS
+from schema.request_params import (
+    FETCH_ESTATE_INFO_PARAMS, 
+    FETCH_SINGLE_ESTATE_INFO_PARAMS,
+    SIMPLE_FETCH_PARAMS,
+    FETCH_ESTATE_MONTHLY_MARKET_INFO_PARAMS
+)
 
 
 class AgencyCrawler(BaseCrawler):
@@ -43,7 +48,7 @@ class AgencyCrawler(BaseCrawler):
     def _set_request_urls(self) -> None:
         self.all_estate_info_url = housing_crawler_config.agency_api.urls.all_estate_info
         self.single_estate_info_url = housing_crawler_config.agency_api.urls.single_estate_info
-        self.estate_market_info_url = housing_crawler_config.agency_api.urls.estate_market_info
+        self.estate_monthly_market_info_url = housing_crawler_config.agency_api.urls.estate_monthly_market_info
         self.building_transactions_url = housing_crawler_config.agency_api.urls.building_transactions
 
     def fetch_all_estate_monthly_market_info(self) -> None:
@@ -60,7 +65,7 @@ class AgencyCrawler(BaseCrawler):
         
         housing_logger.info(f"Starting to fetch monthly market info for {len(estate_ids)} estates")
         for idx, estate_id in enumerate(estate_ids):
-            data = self._fetch_estate_market_info_given_estate_id(estate_id)
+            data = self._fetch_estate_monthly_market_info_given_estate_id(estate_id)
             if not data:
                 continue
             self.crawler_processor.data_cache[self.crawler_processor.estate_monthly_market_table].extend(data)
@@ -70,11 +75,11 @@ class AgencyCrawler(BaseCrawler):
                 housing_logger.info(f"Processed market info for {idx+1}/{len(estate_ids)} estates so far")
             time.sleep(0.25)
 
-    def _fetch_estate_market_info_given_estate_id(self, estate_id: str) -> Optional[list[dict[str: any]]]:
+    def _fetch_estate_monthly_market_info_given_estate_id(self, estate_id: str) -> Optional[list[dict[str: any]]]:
         """
-        Fetch market info for a given estate ID (e.g. E00024)
+        Fetch monthly market info for a given estate ID (e.g. E00024)
         """
-        base_url = self.estate_market_info_url
+        base_url = self.estate_monthly_market_info_url
         params = FETCH_ESTATE_MONTHLY_MARKET_INFO_PARAMS.copy()
 
         # Add param depends on estate or phase type
@@ -158,12 +163,16 @@ class AgencyCrawler(BaseCrawler):
         self.crawler_processor.close_db()
 
     def _fetch_transaction_history_given_building_id(
-            self, building_id: str) -> Optional[dict[str, list|dict]]:
+            self, building_id: str, lang: str="en") -> Optional[dict[str, list|dict]]:
         """
         Fetch transaction history for a given building ID (e.g. B000063459)
+        Default language is english
+        Can set to "zh-hk" for Traditional Chinese or "zh-cn" for Simplified Chinese.
         """
         base_url = self.building_transactions_url.format(building_id=building_id)
         params = SIMPLE_FETCH_PARAMS.copy()
+        if lang != "en":
+            params["lang"] = lang
         response = self._make_request(base_url, params=params)
         if not response:
             housing_logger.error(f"Failed to fetch transactions for building id: {building_id}")
@@ -214,20 +223,23 @@ class AgencyCrawler(BaseCrawler):
         housing_logger.info(f"Saved all building IDs to {output_path}")
 
     def _fetch_estate_info_and_building_ids_given_estate_id(
-            self, estate_id: str
+            self, estate_id: str, lang: str="en"
             ) -> Optional[tuple[dict, dict[str, list]]]:
         """
         Fetch estate info and building IDs for a given estate ID (e.g. E00024)
+        Default language is english
+        Can set to "zh-hk" for Traditional Chinese or "zh-cn" for Simplified Chinese.
         """
         base_url = self.single_estate_info_url.format(estate_id=estate_id)
-        params = SIMPLE_FETCH_PARAMS.copy()
+        params = FETCH_SINGLE_ESTATE_INFO_PARAMS.copy()
+        if lang != "en":
+            params["lang"] = lang
         response = self._make_request(base_url, params=params)
         if not response:
             return None
         data = response.json()
 
         # Extract building IDs from the nested phase -> buildings structure
-        estate_id = data.get("id", "")
         building_ids = []
         for phase in data.get("phase", []):
             building_ids.extend(
@@ -236,13 +248,20 @@ class AgencyCrawler(BaseCrawler):
         # TODO: Currently using building ids for transaction history fetch only
         return {"estate_info": None}, {estate_id: building_ids}
 
-    def fetch_estate_id_and_info(self) -> None:
+    def fetch_estate_id_and_info(self, lang: str="en") -> None:
         """
         Fetch all estate IDs and info from the paginated API and output to json.
+        Default language is english
+        Can set to "zh-hk" for Traditional Chinese or "zh-cn" for Simplified Chinese.
         """
         housing_logger.info("Starting to fetch all estate IDs and info")
+        if lang not in ["en", "zh-hk", "zh-cn"]:
+            housing_logger.error(f"Unsupported language: {lang}. Supported languages are 'en', 'zh-hk', 'zh-cn'.")
+            return
         base_url = self.all_estate_info_url
         params = FETCH_ESTATE_INFO_PARAMS.copy()
+        if lang != "en":
+            params["lang"] = lang
         estate_count = float("inf")
         all_estates = []
         estate_ids = []
@@ -270,9 +289,15 @@ class AgencyCrawler(BaseCrawler):
 
             time.sleep(0.25)
 
-        with open(self.estate_info_file_path, "w", encoding="utf-8") as f:
+        # Save to file
+        # Estate info: change path based on language
+        if lang != "en":
+            estate_info_path = self.files_path / housing_crawler_config.storage.files.outputs.estate_info_json.replace(".json", f"_{lang}.json")
+        else:
+            estate_info_path = self.estate_info_file_path
+        with open(estate_info_path, "w", encoding="utf-8") as f:
             json.dump(all_estates, f, ensure_ascii=False, indent=4)
-            housing_logger.info(f"Saved estate info to {self.estate_info_file_path}")
+            housing_logger.info(f"Saved estate info to {estate_info_path}")
 
         with open(self.estate_id_file_path, "w", encoding="utf-8") as f:
             json.dump(estate_ids, f, ensure_ascii=False, indent=4)

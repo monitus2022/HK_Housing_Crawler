@@ -19,6 +19,7 @@ class BaseCrawler(ABC):
                 except Exception as e:
                     housing_logger.error(f"Failed to create directory {path}: {e}")
         self.session: Optional[requests.Session] = None
+        self.headers: Optional[dict] = None
 
     def _make_request(self, url: str, params: dict = None, retry: int = 3) -> Optional[requests.Response]:
         """

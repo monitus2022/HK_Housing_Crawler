@@ -8,7 +8,7 @@ from schema.transactions import (
     UNIT_INFO_TABLE_SCHEMA,
     UNIT_FEATURES_TABLE_SCHEMA,
     TRANSACTIONS_TABLE_SCHEMA,
-    ESTATE_MONTHLY_MARKET_SCHEMA
+    ESTATE_MONTHLY_MARKET_SCHEMA,
 )
 
 
@@ -91,7 +91,7 @@ class CrawlerProcessor(BaseProcessor):
             else:
                 housing_logger.info(f"No new records to insert into {table_name} table")
         # Clear cache after updating database
-        self.set_data_cache()  
+        self.set_data_cache()
 
     def process_single_building(self, data: dict[str, dict | list]) -> None:
         """
@@ -108,13 +108,16 @@ class CrawlerProcessor(BaseProcessor):
             return None
         # Process building info without data
         building_info = flatten_dict(
-            data.get("building", {}), primary_key="building", sep="_", key_exclude=["bldg_type"]
+            data.get("building", {}),
+            primary_key="building",
+            sep="_",
+            key_exclude=["bldg_type"],
         )
         building_info = self._check_and_convert_types_by_schema(
             building_info, BUILDING_INFO_TABLE_SCHEMA
         )
-        building_id = building_info.get('building_id')
-        building_name = building_info.get('building_name')
+        building_id = building_info.get("building_id")
+        building_name = building_info.get("building_name")
         self.data_cache[self.building_info_table].append(building_info)
 
         # Process each unit in the building
@@ -124,7 +127,9 @@ class CrawlerProcessor(BaseProcessor):
 
         # housing_logger.info(f"Finished processing building {building_id} - {building_name}")
 
-    def _process_single_unit(self, building_id: str, building_name: str, data: dict) -> None:
+    def _process_single_unit(
+        self, building_id: str, building_name: str, data: dict
+    ) -> None:
         """
         Given unit transaction data, split and insert into 3 dict:
         1. Unit Info
@@ -162,7 +167,7 @@ class CrawlerProcessor(BaseProcessor):
                     feature["unit_id"] = unit_id
                     feature = self._check_and_convert_types_by_schema(
                         feature, UNIT_FEATURES_TABLE_SCHEMA
-            )
+                    )
                 # Save Unit Feature to cache
                 self.data_cache[self.unit_features_table].extend(unit_features_list)
 
@@ -177,7 +182,6 @@ class CrawlerProcessor(BaseProcessor):
         )
         self.data_cache[self.unit_info_table].append(unit_info)
 
-
     def _process_single_unit_transactions(self, unit_id: str, data: list[dict]) -> None:
         """
         Given a list of unit transactions, process and save into cache.
@@ -190,7 +194,6 @@ class CrawlerProcessor(BaseProcessor):
             tx["unit_id"] = unit_id
             tx = self._check_and_convert_types_by_schema(tx, TRANSACTIONS_TABLE_SCHEMA)
             self.data_cache[self.transactions_table].append(tx)
-
 
     def get_existing_estate_ids(self) -> set:
         """

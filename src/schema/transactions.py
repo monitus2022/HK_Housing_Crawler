@@ -10,7 +10,7 @@ BUILDING_INFO_TABLE_SCHEMA = {
     "building_id": "TEXT",
     "building_name": "TEXT",
     "phase_id": "TEXT",
-    "phase_name": "TEXT"
+    "phase_name": "TEXT",
 }
 
 UNIT_INFO_TABLE_SCHEMA = {
@@ -23,7 +23,7 @@ UNIT_INFO_TABLE_SCHEMA = {
     "area": "REAL",
     "net_area": "REAL",
     "bedroom": "INTEGER",
-    "sitting_room": "INTEGER"
+    "sitting_room": "INTEGER",
 }
 
 UNIT_FEATURES_TABLE_SCHEMA = {
@@ -39,7 +39,7 @@ TRANSACTIONS_TABLE_SCHEMA = {
     "tx_date": "TEXT",
     "last_tx_date": "TEXT",
     "gain": "REAL",
-    "net_ft_price": "REAL"
+    "net_ft_price": "REAL",
 }
 
 ESTATE_MONTHLY_MARKET_SCHEMA = {
@@ -84,5 +84,5 @@ ESTATE_MONTHLY_MARKET_SCHEMA = {
     "circulate_rate": "REAL",
     "pre_circulate_rate": "REAL",
     "total_no_of_unit": "INTEGER",
-    "pre_total_no_of_unit": "INTEGER"
+    "pre_total_no_of_unit": "INTEGER",
 }
