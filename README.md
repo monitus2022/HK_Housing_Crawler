@@ -23,6 +23,7 @@ A web crawler for scraping housing data in Hong Kong using traditional web scrap
 ### 2. Single Estate Info
 - **Endpoint:** `single_estate_info`
 - Description: Fetches detailed information about a specific estate. Include list of buildings/phases belonged to the estate.
+- Contains detailed text descriptions in chinese version
 - Example URL: https://data.hkp.com.hk/info/v1/estates/E000004419?lang=en
 
 ### 3. Estate Monthly Market Info

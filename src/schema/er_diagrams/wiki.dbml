@@ -1,0 +1,10 @@
+// Stores raw text information about estates from Wikipedia
+
+Table estate_info {
+  estate_id text [pk]
+  estate_name_zh text [not null]
+  estate_name_en text [not null]
+  summary text [not null]
+  description text
+  image_url text
+}
