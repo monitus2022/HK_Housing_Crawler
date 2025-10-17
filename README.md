@@ -35,6 +35,10 @@ A web crawler for scraping housing data in Hong Kong using traditional web scrap
 - Description: Fetches transaction records for each units in a specific building/phase.
 - Example URL: https://data.hkp.com.hk/info/v1/transactions/buildings/B000063458?lang=zh-hk&firsthand=false
 
+### Other currently unused endpoints
+- Transactions by district: https://data.hkp.com.hk/search/v1/transactions?lang=zh-hk&dist_ids=200902&tx_type=S&tx_date=3year&page=1&limit=5
+
+
 ## Data Flow
 ![Data Flow Diagram](https://github.com/monitus2022/draw.io/blob/main/HK_Housing_Agent-Data%20Source%20-%20Agency.drawio.png?raw=true)
 

@@ -1,0 +1,70 @@
+// ER Diagram for HK Housing Crawler Database
+
+TableGroup estate_info {
+    estates
+}
+
+Table estates {
+  estate_id text [pk]
+  estate_name text [unique, not null]
+  region_id int
+  subregion_id int
+  district_id int
+  Note: "Other attributes: school net, location details, etc."
+}
+
+Table facilities {
+  facility_id text [pk]
+  facility_name text [not null, unique]
+  Note: "Contain facilities from estates, buildings and units."
+}
+
+Table estate_facilities {
+  estate_id text
+  facility_id text
+}
+
+Ref: estate_facilities.estate_id > estates.estate_id
+Ref: estate_facilities.facility_id > facilities.facility_id
+
+Table phases {
+  phase_id text [pk]
+  phase_name text [not null]
+  estate_id text
+}
+
+Table buildings {
+  building_id text [pk]
+  building_name text [not null]
+  estate_id text [not null]
+  phase_id text [null]
+  Note: "Small estates may have no phases."
+}
+
+Ref: phases.estate_id > estates.estate_id
+Ref: buildings.estate_id > estates.estate_id
+Ref: buildings.phase_id > phases.phase_id
+
+Table regions {
+  region_id text [pk]
+  region_name text [not null]
+}
+
+Table subregions {
+  subregion_id text [pk]
+  subregion_name text [not null]
+  region_id text [not null]
+}
+
+Table districts {
+  district_id text [pk]
+  district_name text [not null]
+  subregion_id text [not null]
+}
+
+Ref: estates.region_id > regions.region_id
+Ref: estates.subregion_id > subregions.subregion_id
+Ref: estates.district_id > districts.district_id
+
+Ref: subregions.region_id > regions.region_id
+Ref: districts.subregion_id > subregions.subregion_id
