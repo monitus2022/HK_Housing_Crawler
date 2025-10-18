@@ -3,3 +3,5 @@ testing.*
 __pycache__
 *.yml
 data/
+.DS_Store
+.vscode

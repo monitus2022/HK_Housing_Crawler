@@ -12,7 +12,7 @@ class HousingLogger:
         # Colored handler
         handler = colorlog.StreamHandler()
         handler.setFormatter(colorlog.ColoredFormatter(
-            '%(log_color)s%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+            '%(log_color)s%(asctime)s - %(module)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s',
             log_colors={
                 'DEBUG':    'cyan',
                 'INFO':     'green',

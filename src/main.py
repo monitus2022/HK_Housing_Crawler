@@ -1,14 +1,11 @@
-from crawlers.agency import *
-from processors.agency import *
+from crawlers.agency import AgencyCrawler
+from processors.agency import AgencyProcessor
+
 
 def app():
-    # crawler = AgencyCrawler()
-    # crawler.fetch_estate_id_and_info()
+    housing_crawler = AgencyCrawler()
+    housing_crawler.fetch_estate_id_and_info(lang="zh-hk")  # Fetch estate info in Traditional Chinese
 
-    processor = AgencyProcessor()
-    processor.process_estate_info_json()
-    processor.save_estate_info_to_db()
 
 if __name__ == "__main__":
     app()
-    

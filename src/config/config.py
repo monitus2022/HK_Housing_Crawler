@@ -1,69 +1,64 @@
-import yaml
 from pathlib import Path
-from pydantic import BaseModel, Field
-from logger import housing_logger
+from typing import Dict
+import yaml
+from pydantic import BaseModel
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
-class HeadersAgency(BaseModel):
-    accept: str = Field(..., description="Accept header")
-    accept_language: str = Field(..., description="Accept-Language header")
-    authorization: str = Field(..., description="Bearer token for auth")
-    origin: str = Field(..., description="Origin header")
-    referer: str = Field(..., description="Referer header")
-    sec_ch_ua: str = Field(..., description="Sec-CH-UA header")
-    sec_ch_ua_mobile: str = Field(..., description="Sec-CH-UA-Mobile header")
-    sec_ch_ua_platform: str = Field(..., description="Sec-CH-UA-Platform header")
-    sec_fetch_dest: str = Field(..., description="Sec-Fetch-Dest header")
-    sec_fetch_mode: str = Field(..., description="Sec-Fetch-Mode header")
-    sec_fetch_site: str = Field(..., description="Sec-Fetch-Site header")
-    sec_gpc: str = Field(..., description="Sec-GPC header")
-    user_agent: str = Field(..., description="User-Agent header")
+working_dir = Path(__file__).parent.parent.parent
+config_path = working_dir / "src" / "config" / "config.yml"
 
-class FilePathsAgency(BaseModel):
-    db: str
-    estate_info_json: str
-    estate_id_json: str
-    building_id_json: str
-    transactions_json: str
+with open(config_path, 'r', encoding='utf-8') as f:
+    yaml_data = yaml.safe_load(f)
 
-class UrlsAgency(BaseModel):
-    estate_info: str
-    estate_market_info: str
+class AgencyUrls(BaseModel):
+    all_estate_info: str
+    single_estate_info: str
+    estate_monthly_market_info: str
     building_transactions: str
     legacy_building_transactions: str
     legacy_building_ids: str
 
-class Headers(BaseModel):
-    agency: HeadersAgency
+class AgencyApi(BaseModel):
+    urls: AgencyUrls
+    headers: Dict[str, str]
+    cookies_token: str
 
-class FilePaths(BaseModel):
-    agency: FilePathsAgency
-    
-class Urls(BaseModel):
-    agency: UrlsAgency
-    
-class HousingCrawlerConfig(BaseModel):
-    """
-    Top-level configuration model for the housing crawler
-    """
-    headers: Headers
-    urls: Urls
-    file_paths: FilePaths
+class DatabaseFileNames(BaseModel):
+    duckdb: str
+    sqlite: str
 
-# Load config from YAML
-def load_config() -> HousingCrawlerConfig:
-    """
-    Loads the housing crawler configuration from a YAML file
-    """
-    config_path = Path(__file__).parent / "config.yml"
-    if not config_path.exists():
-        housing_logger.error(f"Configuration file not found at {config_path}")
-        raise FileNotFoundError(f"Configuration file not found at {config_path}")
-    with open(config_path, "r", encoding="utf-8") as file:
-        data = yaml.safe_load(file)
-    if not data:
-        housing_logger.error("Configuration file is empty or invalid.")
-        raise ValueError("Configuration file is empty or invalid.")
-    return HousingCrawlerConfig(**data)
+class DatabaseTableNames(BaseModel):
+    estate_info: str
 
-# Global config instance
-housing_crawler_config = load_config()
+class Databases(BaseModel):
+    path: str
+    file_names: DatabaseFileNames
+    table_names: DatabaseTableNames
+
+class FilesOutputs(BaseModel):
+    transactions_db: str
+    estate_info_json: str
+    estate_id_json: str
+    building_id_json: str
+    building_info_json: str
+    legacy_transaction_csv: str
+
+class Files(BaseModel):
+    path: str
+    outputs: FilesOutputs
+
+class Storage(BaseModel):
+    root_path: str
+    databases: Databases
+    files: Files
+
+class Config(BaseSettings):
+    agency_api: AgencyApi
+    storage: Storage
+
+    model_config = SettingsConfigDict(
+        extra="allow"
+    )
+
+housing_crawler_config = Config(**yaml_data)
+
